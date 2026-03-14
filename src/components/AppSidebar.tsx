@@ -2,13 +2,14 @@ import { useLocation, useNavigate, Link } from 'react-router-dom';
 import { useAuth } from '@/context/AuthContext';
 import {
   LayoutDashboard, Activity, ShieldCheck, CreditCard, Target,
-  BrainCircuit, User, Users, Settings, LogOut, ChevronLeft, ChevronRight
+  BrainCircuit, User, Users, Settings, LogOut,   ChevronLeft, ChevronRight, Sparkles
 } from 'lucide-react';
 import { useState } from 'react';
 import { cn } from '@/lib/utils';
 
 const NAV_ITEMS = [
   { label: 'Dashboard', path: '/app/dashboard', icon: LayoutDashboard, roles: ['SINGLE', 'COUPLE', 'ADMIN'] },
+  { label: 'Chat IA', path: '/app/chat', icon: Sparkles, roles: ['SINGLE', 'COUPLE', 'ADMIN'] },
   { label: 'Diagnóstico', path: '/app/diagnostico', icon: Activity, roles: ['SINGLE', 'COUPLE'] },
   { label: 'Plano de Ação', path: '/app/plano-de-acao', icon: ShieldCheck, roles: ['SINGLE', 'COUPLE'] },
   { label: 'Dívidas', path: '/app/dividas', icon: CreditCard, roles: ['SINGLE', 'COUPLE'] },
@@ -29,18 +30,18 @@ export const AppSidebar = () => {
 
   return (
     <aside className={cn(
-      "h-screen sticky top-0 flex flex-col bg-card border-r border-border transition-all duration-300",
+      "h-screen sticky top-0 flex flex-col bg-card/95 backdrop-blur-xl border-r border-border transition-all duration-300",
       collapsed ? "w-16" : "w-64"
     )}>
       {/* Logo */}
       <div className="p-4 flex items-center justify-between">
-        <Link to="/app/dashboard" className="flex items-center gap-2">
-          <div className="w-8 h-8 bg-primary rounded-lg flex items-center justify-center flex-shrink-0">
+        <Link to="/app/dashboard" className="flex items-center gap-3 transition-opacity duration-200 hover:opacity-90">
+          <div className="w-9 h-9 bg-primary rounded-xl flex items-center justify-center flex-shrink-0 shadow-glow-primary">
             <BrainCircuit size={18} className="text-primary-foreground" />
           </div>
           {!collapsed && <span className="font-display font-bold text-lg text-foreground tracking-tight">AURA</span>}
         </Link>
-        <button onClick={() => setCollapsed(!collapsed)} className="text-muted-foreground hover:text-foreground transition-colors">
+        <button onClick={() => setCollapsed(!collapsed)} className="p-1.5 text-muted-foreground hover:text-foreground hover:bg-accent rounded-lg transition-all duration-200">
           {collapsed ? <ChevronRight size={16} /> : <ChevronLeft size={16} />}
         </button>
       </div>
@@ -54,10 +55,10 @@ export const AppSidebar = () => {
               key={item.path}
               to={item.path}
               className={cn(
-                "flex items-center gap-3 px-3 py-2.5 rounded-md transition-all duration-200 text-sm font-medium",
+                "flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium transition-all duration-200",
                 isActive
-                  ? "bg-primary/10 text-primary"
-                  : "text-muted-foreground hover:bg-accent hover:text-foreground"
+                  ? "bg-primary/10 text-primary border border-primary/20"
+                  : "text-muted-foreground hover:bg-accent hover:text-foreground border border-transparent"
               )}
             >
               <item.icon size={18} className="flex-shrink-0" />
@@ -71,13 +72,13 @@ export const AppSidebar = () => {
       <div className="p-3 border-t border-border space-y-2">
         {!collapsed && (
           <div className="px-3 py-2">
-            <p className="text-xs text-muted-foreground">Logado como</p>
-            <p className="text-sm font-medium text-foreground truncate">{userName}</p>
+            <p className="text-xs text-muted-foreground uppercase tracking-wider">Logado como</p>
+            <p className="text-sm font-medium text-foreground truncate font-mono-nums">{userName}</p>
           </div>
         )}
         <button
           onClick={() => { logout(); navigate('/login'); }}
-          className="flex items-center gap-3 px-3 py-2 w-full text-muted-foreground hover:text-destructive transition-colors rounded-md text-sm"
+          className="flex items-center gap-3 px-3 py-2 w-full text-muted-foreground hover:text-destructive hover:bg-accent rounded-xl transition-all duration-200 text-sm"
         >
           <LogOut size={18} className="flex-shrink-0" />
           {!collapsed && <span>Sair</span>}

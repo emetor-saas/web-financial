@@ -14,8 +14,15 @@ export default {
     },
     extend: {
       fontFamily: {
-        sans: ['Inter', 'system-ui', 'sans-serif'],
-        display: ['Sora', 'Inter', 'sans-serif'],
+        sans: ['DM Sans', 'system-ui', 'sans-serif'],
+        display: ['Sora', 'DM Sans', 'sans-serif'],
+        mono: ['JetBrains Mono', 'ui-monospace', 'monospace'],
+      },
+      transitionDuration: {
+        '150': '150ms',
+        '200': '200ms',
+        '250': '250ms',
+        '300': '300ms',
       },
       colors: {
         border: "hsl(var(--border))",
@@ -70,9 +77,9 @@ export default {
         sm: "calc(var(--radius) - 4px)",
       },
       boxShadow: {
-        premium: "0 4px 20px -2px rgba(0, 0, 0, 0.5)",
-        "glow-primary": "0 0 15px rgba(37, 211, 102, 0.15)",
-        "glow-ai": "0 0 20px rgba(124, 92, 255, 0.2)",
+        premium: "0 4px 24px -4px rgba(0, 0, 0, 0.5), 0 0 0 1px rgba(255, 255, 255, 0.03)",
+        "glow-primary": "0 0 24px rgba(126, 217, 141, 0.12)",
+        "glow-ai": "0 0 20px rgba(126, 217, 141, 0.1)",
       },
       keyframes: {
         "accordion-down": {

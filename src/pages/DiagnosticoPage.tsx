@@ -3,7 +3,7 @@ import { motion } from 'framer-motion';
 import { Radar, RadarChart, PolarGrid, PolarAngleAxis, ResponsiveContainer, LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip } from 'recharts';
 import { getScoreColor, getScoreLabel } from '@/utils/formatters';
 
-const anim = (i: number) => ({ initial: { opacity: 0, y: 15 }, animate: { opacity: 1, y: 0 }, transition: { delay: i * 0.05 } });
+const anim = (i: number) => ({ initial: { opacity: 0, y: 12 }, animate: { opacity: 1, y: 0 }, transition: { delay: i * 0.04, duration: 0.25 } });
 
 const DiagnosticoPage = () => {
   const { profileType, singleProfile, coupleProfile } = useAuth();
@@ -38,16 +38,16 @@ const DiagnosticoPage = () => {
   const attentions = dimensions.filter(d => d.value < 65);
 
   return (
-    <div className="p-6 lg:p-8 space-y-8 max-w-5xl mx-auto">
+    <div className="p-4 sm:p-6 lg:p-8 space-y-6 sm:space-y-8 max-w-5xl mx-auto">
       <motion.div {...anim(0)} className="text-center space-y-3">
-        <h1 className="font-display text-3xl font-black">Análise Dimensional</h1>
+        <h1 className="font-display text-3xl font-black tracking-tight">Análise Dimensional</h1>
         <p className="text-muted-foreground max-w-xl mx-auto text-sm">
           Sua saúde financeira é medida através de 6 pilares fundamentais. O equilíbrio entre eles determina sua resiliência a longo prazo.
         </p>
       </motion.div>
 
       {/* Score Hero */}
-      <motion.div {...anim(1)} className="bg-card border border-border rounded-xl p-8 text-center shadow-premium">
+      <motion.div {...anim(1)} className="card-solid rounded-2xl p-8 text-center">
         <span className="text-xs font-bold text-muted-foreground uppercase tracking-widest">Score Geral</span>
         <p className={`text-7xl font-display font-black tabular-nums mt-2 ${getScoreColor(score)}`}>{score}</p>
         <p className="text-muted-foreground text-sm mt-2">Nível: <span className={`font-semibold ${getScoreColor(score)}`}>{getScoreLabel(score)}</span></p>
@@ -55,14 +55,14 @@ const DiagnosticoPage = () => {
 
       <div className="grid grid-cols-1 md:grid-cols-2 gap-8 items-start">
         {/* Radar */}
-        <motion.div {...anim(2)} className="bg-card border border-border rounded-xl p-6">
-          <h3 className="font-display font-semibold mb-4 text-center">Radar Dimensional</h3>
+        <motion.div {...anim(2)} className="card-solid rounded-2xl p-6 hover:border-border transition-all duration-200">
+          <h3 className="font-display font-semibold tracking-tight mb-4 text-center">Radar Dimensional</h3>
           <div className="h-[320px]">
             <ResponsiveContainer width="100%" height="100%">
               <RadarChart cx="50%" cy="50%" outerRadius="75%" data={radarData}>
-                <PolarGrid stroke="#2B3952" />
-                <PolarAngleAxis dataKey="subject" tick={{ fill: '#7F8AA3', fontSize: 11 }} />
-                <Radar dataKey="value" stroke="#25D366" fill="#25D366" fillOpacity={0.2} strokeWidth={2} />
+                <PolarGrid stroke="hsl(0, 0%, 18%)" />
+                <PolarAngleAxis dataKey="subject" tick={{ fill: 'hsl(0, 0%, 55%)', fontSize: 11 }} />
+                <Radar dataKey="value" stroke="hsl(145, 55%, 58%)" fill="hsl(145, 55%, 58%)" fillOpacity={0.2} strokeWidth={2} />
               </RadarChart>
             </ResponsiveContainer>
           </div>
@@ -91,16 +91,16 @@ const DiagnosticoPage = () => {
       </div>
 
       {/* Score History */}
-      <motion.div {...anim(4)} className="bg-card border border-border rounded-xl p-6">
+      <motion.div {...anim(4)} className="card-solid rounded-2xl p-6 hover:border-border transition-all duration-200">
         <h3 className="font-display font-semibold mb-6">Evolução do Score</h3>
         <div className="h-[200px]">
           <ResponsiveContainer width="100%" height="100%">
             <LineChart data={historyData}>
-              <CartesianGrid strokeDasharray="3 3" stroke="#2B3952" vertical={false} />
-              <XAxis dataKey="month" stroke="#7F8AA3" fontSize={12} tickLine={false} axisLine={false} />
-              <YAxis stroke="#7F8AA3" fontSize={12} tickLine={false} axisLine={false} domain={[40, 100]} />
-              <Tooltip contentStyle={{ backgroundColor: '#182235', border: '1px solid #2B3952', borderRadius: 8 }} itemStyle={{ color: '#F5F7FB' }} />
-              <Line type="monotone" dataKey="score" stroke="#25D366" strokeWidth={2} dot={{ fill: '#25D366', r: 4 }} name="Score" />
+              <CartesianGrid strokeDasharray="3 3" stroke="hsl(0, 0%, 18%)" vertical={false} />
+              <XAxis dataKey="month" stroke="hsl(0, 0%, 55%)" fontSize={12} tickLine={false} axisLine={false} />
+              <YAxis stroke="hsl(0, 0%, 55%)" fontSize={12} tickLine={false} axisLine={false} domain={[40, 100]} />
+              <Tooltip contentStyle={{ backgroundColor: 'hsl(0, 0%, 9%)', border: '1px solid hsl(0, 0%, 18%)', borderRadius: 8 }} itemStyle={{ color: 'hsl(0, 0%, 100%)' }} />
+              <Line type="monotone" dataKey="score" stroke="hsl(145, 55%, 58%)" strokeWidth={2} dot={{ fill: 'hsl(145, 55%, 58%)', r: 4 }} name="Score" />
             </LineChart>
           </ResponsiveContainer>
         </div>
@@ -108,7 +108,7 @@ const DiagnosticoPage = () => {
 
       {/* Strengths & Attention */}
       <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-        <motion.div {...anim(5)} className="bg-card border border-border rounded-xl p-6">
+        <motion.div {...anim(5)} className="card-solid rounded-2xl p-6 hover:border-border transition-all duration-200">
           <h3 className="font-display font-semibold mb-4 text-success">Pontos Fortes</h3>
           <ul className="space-y-3">
             {strengths.map(s => (
@@ -123,7 +123,7 @@ const DiagnosticoPage = () => {
             {strengths.length === 0 && <p className="text-sm text-muted-foreground">Nenhum pilar acima de 65 pontos ainda.</p>}
           </ul>
         </motion.div>
-        <motion.div {...anim(6)} className="bg-card border border-border rounded-xl p-6">
+        <motion.div {...anim(6)} className="card-solid rounded-2xl p-6 hover:border-border transition-all duration-200">
           <h3 className="font-display font-semibold mb-4 text-warning">Pontos de Atenção</h3>
           <ul className="space-y-3">
             {attentions.map(a => (

@@ -23,7 +23,7 @@ const PerfilPage = () => {
   });
 
   return (
-    <div className="p-6 lg:p-8 space-y-6 max-w-3xl mx-auto">
+    <div className="p-4 sm:p-6 lg:p-8 space-y-6 max-w-3xl mx-auto">
       <motion.div {...anim(0)}>
         <h1 className="font-display text-2xl lg:text-3xl font-bold">Perfil</h1>
         <p className="text-muted-foreground text-sm mt-1">Seus dados e preferências.</p>

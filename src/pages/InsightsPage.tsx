@@ -4,7 +4,7 @@ import { BrainCircuit, Zap, TrendingUp, AlertTriangle, Eye, BarChart3, Clock } f
 import { getSeverityColor } from '@/utils/formatters';
 import { useState } from 'react';
 
-const anim = (i: number) => ({ initial: { opacity: 0, y: 15 }, animate: { opacity: 1, y: 0 }, transition: { delay: i * 0.05 } });
+const anim = (i: number) => ({ initial: { opacity: 0, y: 12 }, animate: { opacity: 1, y: 0 }, transition: { delay: i * 0.04, duration: 0.25 } });
 
 const categoryIcons: Record<string, typeof Zap> = {
   economy: Zap,
@@ -37,14 +37,14 @@ const InsightsPage = () => {
   const categories = ['all', ...Array.from(new Set(insights.map(i => i.category)))];
 
   return (
-    <div className="p-6 lg:p-8 space-y-6 max-w-4xl mx-auto">
+    <div className="p-4 sm:p-6 lg:p-8 space-y-6 sm:space-y-8 max-w-4xl mx-auto">
       <motion.div {...anim(0)} className="flex items-center gap-3">
-        <div className="w-10 h-10 bg-secondary/20 rounded-lg flex items-center justify-center">
-          <BrainCircuit size={20} className="text-secondary" />
+        <div className="w-10 h-10 bg-primary/20 border border-primary/20 rounded-xl flex items-center justify-center">
+          <BrainCircuit size={20} className="text-primary" />
         </div>
         <div>
-          <h1 className="font-display text-2xl lg:text-3xl font-bold">Central de Insights</h1>
-          <p className="text-muted-foreground text-sm">Análises e recomendações geradas por inteligência artificial.</p>
+          <h1 className="font-display text-2xl lg:text-3xl font-black tracking-tight">Central de Insights</h1>
+          <p className="text-muted-foreground text-sm mt-0.5">Análises e recomendações geradas por inteligência artificial.</p>
         </div>
       </motion.div>
 
@@ -54,8 +54,8 @@ const InsightsPage = () => {
           <button
             key={c}
             onClick={() => setActiveFilter(c)}
-            className={`px-3 py-1.5 rounded-md text-xs font-semibold transition-colors ${
-              activeFilter === c ? 'bg-secondary text-secondary-foreground' : 'bg-accent text-muted-foreground hover:text-foreground'
+            className={`px-3 py-2 rounded-xl text-xs font-semibold transition-all duration-200 ${
+              activeFilter === c ? 'bg-primary text-primary-foreground' : 'bg-muted/60 border border-border text-muted-foreground hover:text-foreground hover:bg-accent'
             }`}
           >
             {c === 'all' ? 'Todos' : categoryLabels[c] || c}
@@ -74,8 +74,8 @@ const InsightsPage = () => {
               className={`border rounded-xl p-5 transition-all duration-200 hover:-translate-y-0.5 ${getSeverityColor(insight.severity)}`}
             >
               <div className="flex items-start gap-4">
-                <div className="w-10 h-10 bg-secondary/20 rounded-lg flex items-center justify-center flex-shrink-0">
-                  <Icon size={18} className="text-secondary" />
+                <div className="w-10 h-10 bg-primary/20 rounded-lg flex items-center justify-center flex-shrink-0">
+                  <Icon size={18} className="text-primary" />
                 </div>
                 <div className="flex-1">
                   <div className="flex items-center gap-2 flex-wrap mb-1">
@@ -90,7 +90,7 @@ const InsightsPage = () => {
                   </div>
                   <p className="text-sm text-muted-foreground leading-relaxed mb-3">{insight.text}</p>
                   <div className="flex items-center gap-4 text-xs text-muted-foreground mb-2">
-                    <span className="flex items-center gap-1"><Zap size={12} className="text-secondary" /> Impacto: <strong className="text-foreground">{insight.impact}</strong></span>
+                    <span className="flex items-center gap-1"><Zap size={12} className="text-primary" /> Impacto: <strong className="text-foreground">{insight.impact}</strong></span>
                     {insight.timeframe && <span className="flex items-center gap-1"><Clock size={12} /> {timeLabels[insight.timeframe]}</span>}
                   </div>
                   <div className="bg-accent/50 rounded-lg p-3">

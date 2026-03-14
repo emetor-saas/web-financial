@@ -20,21 +20,21 @@ const LoginPage = () => {
   };
 
   return (
-    <div className="min-h-screen bg-background flex items-center justify-center p-4">
+    <div className="min-h-screen min-h-[100dvh] bg-background bg-[radial-gradient(ellipse_80%_60%_at_50%_-10%,rgba(255,255,255,0.05),transparent)] flex items-center justify-center p-4 sm:p-6 safe-area-inset">
       <motion.div
-        initial={{ opacity: 0, y: 20 }}
+        initial={{ opacity: 0, y: 12 }}
         animate={{ opacity: 1, y: 0 }}
-        transition={{ duration: 0.5 }}
-        className="w-full max-w-md space-y-8"
+        transition={{ duration: 0.3 }}
+        className="w-full max-w-md space-y-10"
       >
         {/* Logo */}
-        <div className="text-center space-y-4">
-          <div className="w-16 h-16 bg-primary rounded-2xl flex items-center justify-center mx-auto shadow-glow-primary">
+        <div className="text-center space-y-5">
+          <div className="w-[72px] h-[72px] bg-primary rounded-2xl flex items-center justify-center mx-auto shadow-glow-primary border border-primary/20">
             <BrainCircuit size={32} className="text-primary-foreground" />
           </div>
           <div>
-            <h1 className="font-display text-3xl font-bold text-foreground">AURA</h1>
-            <p className="text-muted-foreground text-sm mt-1">Diagnóstico financeiro inteligente</p>
+            <h1 className="font-display text-3xl font-black text-foreground tracking-tight">AURA</h1>
+            <p className="text-muted-foreground text-sm mt-1.5">Diagnóstico financeiro inteligente</p>
           </div>
         </div>
 
@@ -46,13 +46,13 @@ const LoginPage = () => {
           {profiles.map((p, i) => (
             <motion.button
               key={p.type}
-              initial={{ opacity: 0, x: -20 }}
+              initial={{ opacity: 0, x: -12 }}
               animate={{ opacity: 1, x: 0 }}
-              transition={{ delay: 0.2 + i * 0.1 }}
+              transition={{ delay: 0.08 + i * 0.06, duration: 0.25 }}
               onClick={() => handleLogin(p.type)}
-              className="w-full flex items-center gap-4 bg-card border border-border hover:border-primary/50 rounded-xl p-4 transition-all duration-200 hover:shadow-glow-primary group"
+              className="w-full flex items-center gap-4 card-glass hover:border-border hover:bg-accent/50 rounded-2xl p-5 transition-all duration-200 hover:shadow-glow-primary group"
             >
-              <div className="w-12 h-12 bg-primary/10 rounded-lg flex items-center justify-center group-hover:bg-primary/20 transition-colors">
+              <div className="w-12 h-12 bg-primary/10 rounded-xl flex items-center justify-center group-hover:bg-primary/20 transition-colors duration-200 border border-primary/10">
                 <p.icon size={22} className="text-primary" />
               </div>
               <div className="text-left">

@@ -1,5 +1,6 @@
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Route, Routes, Navigate } from "react-router-dom";
+import { ThemeProvider } from "next-themes";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { Toaster } from "@/components/ui/toaster";
 import { TooltipProvider } from "@/components/ui/tooltip";
@@ -15,16 +16,18 @@ import InsightsPage from "@/pages/InsightsPage";
 import PerfilPage from "@/pages/PerfilPage";
 import CasalPage from "@/pages/CasalPage";
 import AdminPage from "@/pages/AdminPage";
+import ChatPage from "@/pages/ChatPage";
 import NotFound from "@/pages/NotFound";
 
 const queryClient = new QueryClient();
 
 const App = () => (
   <QueryClientProvider client={queryClient}>
-    <TooltipProvider>
-      <Toaster />
-      <Sonner />
-      <AuthProvider>
+    <ThemeProvider attribute="class" defaultTheme="system" enableSystem storageKey="web-financial-theme">
+      <TooltipProvider>
+        <Toaster />
+        <Sonner />
+        <AuthProvider>
         <BrowserRouter>
           <Routes>
             <Route path="/login" element={<LoginPage />} />
@@ -38,13 +41,15 @@ const App = () => (
               <Route path="perfil" element={<PerfilPage />} />
               <Route path="casal" element={<CasalPage />} />
               <Route path="admin" element={<AdminPage />} />
+              <Route path="chat" element={<ChatPage />} />
             </Route>
             <Route path="/" element={<Navigate to="/login" replace />} />
             <Route path="*" element={<NotFound />} />
           </Routes>
         </BrowserRouter>
-      </AuthProvider>
-    </TooltipProvider>
+        </AuthProvider>
+      </TooltipProvider>
+    </ThemeProvider>
   </QueryClientProvider>
 );
 

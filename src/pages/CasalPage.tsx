@@ -26,10 +26,10 @@ const CasalPage = () => {
   ];
 
   return (
-    <div className="p-6 lg:p-8 space-y-6 max-w-5xl mx-auto">
+    <div className="p-4 sm:p-6 lg:p-8 space-y-6 max-w-5xl mx-auto">
       <motion.div {...anim(0)} className="flex items-center gap-3">
-        <div className="w-10 h-10 bg-secondary/20 rounded-lg flex items-center justify-center">
-          <Users size={20} className="text-secondary" />
+        <div className="w-10 h-10 bg-primary/20 rounded-lg flex items-center justify-center">
+          <Users size={20} className="text-primary" />
         </div>
         <div>
           <h1 className="font-display text-2xl lg:text-3xl font-bold">Espaço do Casal</h1>
@@ -75,8 +75,8 @@ const CasalPage = () => {
               <ResponsiveContainer width="100%" height="100%">
                 <PieChart>
                   <Pie data={contribData} dataKey="value" cx="50%" cy="50%" innerRadius={35} outerRadius={55} paddingAngle={4}>
-                    <Cell fill="#25D366" />
-                    <Cell fill="#7C5CFF" />
+                    <Cell fill="hsl(145, 55%, 58%)" />
+                    <Cell fill="hsl(145, 45%, 45%)" />
                   </Pie>
                 </PieChart>
               </ResponsiveContainer>
@@ -84,7 +84,7 @@ const CasalPage = () => {
             <div className="space-y-2">
               {contribData.map((d, i) => (
                 <div key={d.name} className="flex items-center gap-2 text-sm">
-                  <div className="w-3 h-3 rounded-full" style={{ backgroundColor: i === 0 ? '#25D366' : '#7C5CFF' }} />
+                  <div className="w-3 h-3 rounded-full" style={{ backgroundColor: i === 0 ? 'hsl(145, 55%, 58%)' : 'hsl(145, 45%, 45%)' }} />
                   <span className="text-muted-foreground">{d.name}</span>
                   <span className="font-semibold tabular-nums">{formatCurrency(d.value)}</span>
                   <span className="text-xs text-muted-foreground">({Math.round((d.value / p.metrics.jointIncome) * 100)}%)</span>
@@ -99,10 +99,10 @@ const CasalPage = () => {
           <div className="h-[180px]">
             <ResponsiveContainer width="100%" height="100%">
               <BarChart data={p.sharedCategories} layout="vertical">
-                <CartesianGrid strokeDasharray="3 3" stroke="#2B3952" horizontal={false} />
-                <XAxis type="number" stroke="#7F8AA3" fontSize={10} tickLine={false} axisLine={false} />
-                <YAxis dataKey="name" type="category" stroke="#7F8AA3" fontSize={11} tickLine={false} axisLine={false} width={80} />
-                <Tooltip contentStyle={{ backgroundColor: '#182235', border: '1px solid #2B3952', borderRadius: 8 }} itemStyle={{ color: '#F5F7FB' }} />
+                <CartesianGrid strokeDasharray="3 3" stroke="hsl(0, 0%, 18%)" horizontal={false} />
+                <XAxis type="number" stroke="hsl(0, 0%, 55%)" fontSize={10} tickLine={false} axisLine={false} />
+                <YAxis dataKey="name" type="category" stroke="hsl(0, 0%, 55%)" fontSize={11} tickLine={false} axisLine={false} width={80} />
+                <Tooltip contentStyle={{ backgroundColor: 'hsl(0, 0%, 9%)', border: '1px solid hsl(0, 0%, 18%)', borderRadius: 8 }} itemStyle={{ color: 'hsl(0, 0%, 100%)' }} />
                 <Bar dataKey="value" radius={[0, 4, 4, 0]} name="Valor">
                   {p.sharedCategories.map((c, i) => <Cell key={i} fill={c.color} />)}
                 </Bar>
@@ -137,8 +137,8 @@ const CasalPage = () => {
       </motion.div>
 
       {/* AI Meeting */}
-      <motion.div {...anim(7)} className="bg-secondary/10 border border-secondary/20 rounded-xl p-6">
-        <div className="flex items-center gap-2 text-secondary mb-4">
+      <motion.div {...anim(7)} className="bg-primary/10 border border-primary/20 rounded-xl p-6">
+        <div className="flex items-center gap-2 text-primary mb-4">
           <BrainCircuit size={18} />
           <h3 className="font-display font-semibold">Reunião Guiada por IA</h3>
         </div>
@@ -146,7 +146,7 @@ const CasalPage = () => {
           {p.meetings.filter(m => m.status === 'scheduled').map(m => (
             <div key={m.id} className="bg-card border border-border rounded-lg p-4">
               <div className="flex items-center gap-2 mb-2">
-                <Calendar size={14} className="text-secondary" />
+                <Calendar size={14} className="text-primary" />
                 <span className="font-semibold text-sm">{m.title}</span>
                 <span className="text-xs text-muted-foreground ml-auto">{m.date}</span>
               </div>

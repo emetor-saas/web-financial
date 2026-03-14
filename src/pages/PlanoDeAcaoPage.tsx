@@ -29,7 +29,7 @@ const PlanoDeAcaoPage = () => {
   const progress = actions.length > 0 ? Math.round((completedCount / actions.length) * 100) : 0;
 
   return (
-    <div className="p-6 lg:p-8 space-y-6 max-w-4xl mx-auto">
+    <div className="p-4 sm:p-6 lg:p-8 space-y-6 max-w-4xl mx-auto">
       <motion.div {...anim(0)}>
         <h1 className="font-display text-2xl lg:text-3xl font-bold">Plano de Ação — 30 Dias</h1>
         <p className="text-muted-foreground text-sm mt-1">Ações priorizadas para melhorar sua saúde financeira.</p>
@@ -93,7 +93,7 @@ const PlanoDeAcaoPage = () => {
                 </div>
                 <p className="text-xs text-muted-foreground mb-2">{action.description}</p>
                 <div className="flex items-center gap-4 text-xs text-muted-foreground">
-                  <span className="flex items-center gap-1"><Zap size={12} className="text-secondary" /> {action.impact}</span>
+                  <span className="flex items-center gap-1"><Zap size={12} className="text-primary" /> {action.impact}</span>
                   <span className="flex items-center gap-1"><Clock size={12} /> {action.deadline}</span>
                   <span className="flex items-center gap-1"><ArrowUp size={12} /> {action.difficulty === 'easy' ? 'Fácil' : action.difficulty === 'medium' ? 'Moderada' : 'Difícil'}</span>
                 </div>

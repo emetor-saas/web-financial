@@ -11,7 +11,7 @@ const MetasPage = () => {
   const goals = profileType === 'COUPLE' ? coupleProfile.goals : singleProfile.goals;
 
   return (
-    <div className="p-6 lg:p-8 space-y-6 max-w-5xl mx-auto">
+    <div className="p-4 sm:p-6 lg:p-8 space-y-6 max-w-5xl mx-auto">
       <motion.div {...anim(0)}>
         <h1 className="font-display text-2xl lg:text-3xl font-bold">Metas Financeiras</h1>
         <p className="text-muted-foreground text-sm mt-1">Acompanhe seus objetivos e viabilidade real.</p>
@@ -41,7 +41,7 @@ const MetasPage = () => {
                   </div>
                   <div>
                     <h3 className="font-display font-semibold">{g.title}</h3>
-                    {g.shared && <span className="text-xs text-secondary">Meta compartilhada</span>}
+                    {g.shared && <span className="text-xs text-primary">Meta compartilhada</span>}
                   </div>
                 </div>
                 <div className="text-right">
@@ -90,13 +90,13 @@ const MetasPage = () => {
               <div className="h-[160px]">
                 <ResponsiveContainer width="100%" height="100%">
                   <LineChart data={projectionData}>
-                    <CartesianGrid strokeDasharray="3 3" stroke="#2B3952" vertical={false} />
-                    <XAxis dataKey="month" stroke="#7F8AA3" fontSize={10} tickLine={false} axisLine={false} />
-                    <YAxis stroke="#7F8AA3" fontSize={10} tickLine={false} axisLine={false} />
-                    <Tooltip contentStyle={{ backgroundColor: '#182235', border: '1px solid #2B3952', borderRadius: 8, fontSize: 12 }} itemStyle={{ color: '#F5F7FB' }} />
-                    <Line type="monotone" dataKey="otimista" stroke="#47D7AC" strokeWidth={1.5} dot={false} name="Otimista" />
-                    <Line type="monotone" dataKey="realista" stroke="#25D366" strokeWidth={2} dot={false} name="Realista" />
-                    <Line type="monotone" dataKey="conservador" stroke="#F4C95D" strokeWidth={1.5} dot={false} strokeDasharray="5 5" name="Conservador" />
+                    <CartesianGrid strokeDasharray="3 3" stroke="hsl(0, 0%, 18%)" vertical={false} />
+                    <XAxis dataKey="month" stroke="hsl(0, 0%, 55%)" fontSize={10} tickLine={false} axisLine={false} />
+                    <YAxis stroke="hsl(0, 0%, 55%)" fontSize={10} tickLine={false} axisLine={false} />
+                    <Tooltip contentStyle={{ backgroundColor: 'hsl(0, 0%, 9%)', border: '1px solid hsl(0, 0%, 18%)', borderRadius: 8, fontSize: 12 }} itemStyle={{ color: 'hsl(0, 0%, 100%)' }} />
+                    <Line type="monotone" dataKey="otimista" stroke="hsl(145, 55%, 65%)" strokeWidth={1.5} dot={false} name="Otimista" />
+                    <Line type="monotone" dataKey="realista" stroke="hsl(145, 55%, 58%)" strokeWidth={2} dot={false} name="Realista" />
+                    <Line type="monotone" dataKey="conservador" stroke="hsl(0, 0%, 65%)" strokeWidth={1.5} dot={false} strokeDasharray="5 5" name="Conservador" />
                   </LineChart>
                 </ResponsiveContainer>
               </div>

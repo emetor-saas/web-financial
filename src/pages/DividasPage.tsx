@@ -16,7 +16,7 @@ const DividasPage = () => {
   const chartData = debts.map(d => ({ name: d.name, saldo: d.balance, juros: d.interestRate }));
 
   return (
-    <div className="p-6 lg:p-8 space-y-6 max-w-5xl mx-auto">
+    <div className="p-4 sm:p-6 lg:p-8 space-y-6 max-w-5xl mx-auto">
       <motion.div {...anim(0)}>
         <h1 className="font-display text-2xl lg:text-3xl font-bold">Mapa de Dívidas</h1>
         <p className="text-muted-foreground text-sm mt-1">Análise detalhada e estratégia de quitação.</p>
@@ -47,12 +47,12 @@ const DividasPage = () => {
         <div className="h-[220px]">
           <ResponsiveContainer width="100%" height="100%">
             <BarChart data={chartData}>
-              <CartesianGrid strokeDasharray="3 3" stroke="#2B3952" vertical={false} />
-              <XAxis dataKey="name" stroke="#7F8AA3" fontSize={12} tickLine={false} axisLine={false} />
-              <YAxis stroke="#7F8AA3" fontSize={12} tickLine={false} axisLine={false} />
-              <Tooltip contentStyle={{ backgroundColor: '#182235', border: '1px solid #2B3952', borderRadius: 8 }} itemStyle={{ color: '#F5F7FB' }} />
+              <CartesianGrid strokeDasharray="3 3" stroke="hsl(0, 0%, 18%)" vertical={false} />
+              <XAxis dataKey="name" stroke="hsl(0, 0%, 55%)" fontSize={12} tickLine={false} axisLine={false} />
+              <YAxis stroke="hsl(0, 0%, 55%)" fontSize={12} tickLine={false} axisLine={false} />
+              <Tooltip contentStyle={{ backgroundColor: 'hsl(0, 0%, 9%)', border: '1px solid hsl(0, 0%, 18%)', borderRadius: 8 }} itemStyle={{ color: 'hsl(0, 0%, 100%)' }} />
               <Bar dataKey="saldo" radius={[6, 6, 0, 0]} name="Saldo">
-                {chartData.map((_, i) => <Cell key={i} fill={i === 0 ? '#FF6B6B' : '#F4C95D'} />)}
+                {chartData.map((_, i) => <Cell key={i} fill={i === 0 ? 'hsl(0, 70%, 55%)' : 'hsl(145, 55%, 58%)'} />)}
               </Bar>
             </BarChart>
           </ResponsiveContainer>
@@ -85,8 +85,8 @@ const DividasPage = () => {
       </div>
 
       {/* Strategy */}
-      <motion.div {...anim(8)} className="bg-secondary/10 border border-secondary/20 rounded-xl p-6">
-        <h3 className="font-display font-semibold text-secondary mb-2">Estratégia Recomendada</h3>
+      <motion.div {...anim(8)} className="bg-primary/10 border border-primary/20 rounded-xl p-6">
+        <h3 className="font-display font-semibold text-primary mb-2">Estratégia Recomendada</h3>
         <p className="text-sm text-muted-foreground leading-relaxed">
           Priorize a quitação da dívida com maior taxa de juros primeiro (método avalanche). 
           Concentre aportes extras no Cartão Nubank para eliminar os 14,5% a.m. de juros. 

@@ -34,8 +34,8 @@ const AdminPage = () => {
   ] as const;
 
   const pieData = [
-    { name: 'Solteiros', value: p.stats.activeSingles, color: '#25D366' },
-    { name: 'Casais', value: p.stats.activeCouples, color: '#7C5CFF' },
+    { name: 'Solteiros', value: p.stats.activeSingles, color: 'hsl(145, 55%, 58%)' },
+    { name: 'Casais', value: p.stats.activeCouples, color: 'hsl(145, 45%, 45%)' },
   ];
 
   const funnelData = [
@@ -47,7 +47,7 @@ const AdminPage = () => {
   ];
 
   return (
-    <div className="p-6 lg:p-8 space-y-6 max-w-7xl mx-auto">
+    <div className="p-4 sm:p-6 lg:p-8 space-y-6 max-w-7xl mx-auto">
       <motion.div {...anim(0)} className="flex items-center gap-3">
         <div className="w-10 h-10 bg-primary/20 rounded-lg flex items-center justify-center">
           <Settings size={20} className="text-primary" />
@@ -100,15 +100,15 @@ const AdminPage = () => {
                   <AreaChart data={p.growthData}>
                     <defs>
                       <linearGradient id="admGrad" x1="0" y1="0" x2="0" y2="1">
-                        <stop offset="5%" stopColor="#25D366" stopOpacity={0.3} />
-                        <stop offset="95%" stopColor="#25D366" stopOpacity={0} />
+                        <stop offset="5%" stopColor="hsl(145, 55%, 58%)" stopOpacity={0.3} />
+                        <stop offset="95%" stopColor="hsl(145, 55%, 58%)" stopOpacity={0} />
                       </linearGradient>
                     </defs>
-                    <CartesianGrid strokeDasharray="3 3" stroke="#2B3952" vertical={false} />
-                    <XAxis dataKey="month" stroke="#7F8AA3" fontSize={12} tickLine={false} axisLine={false} />
-                    <YAxis stroke="#7F8AA3" fontSize={12} tickLine={false} axisLine={false} />
-                    <Tooltip contentStyle={{ backgroundColor: '#182235', border: '1px solid #2B3952', borderRadius: 8 }} itemStyle={{ color: '#F5F7FB' }} />
-                    <Area type="monotone" dataKey="users" stroke="#25D366" fillOpacity={1} fill="url(#admGrad)" strokeWidth={2} name="Usuários" />
+                    <CartesianGrid strokeDasharray="3 3" stroke="hsl(0, 0%, 18%)" vertical={false} />
+                    <XAxis dataKey="month" stroke="hsl(0, 0%, 55%)" fontSize={12} tickLine={false} axisLine={false} />
+                    <YAxis stroke="hsl(0, 0%, 55%)" fontSize={12} tickLine={false} axisLine={false} />
+                    <Tooltip contentStyle={{ backgroundColor: 'hsl(0, 0%, 9%)', border: '1px solid hsl(0, 0%, 18%)', borderRadius: 8 }} itemStyle={{ color: 'hsl(0, 0%, 100%)' }} />
+                    <Area type="monotone" dataKey="users" stroke="hsl(145, 55%, 58%)" fillOpacity={1} fill="url(#admGrad)" strokeWidth={2} name="Usuários" />
                   </AreaChart>
                 </ResponsiveContainer>
               </div>
@@ -123,7 +123,7 @@ const AdminPage = () => {
                     <Pie data={pieData} dataKey="value" cx="50%" cy="50%" innerRadius={40} outerRadius={60} paddingAngle={4}>
                       {pieData.map((d, i) => <Cell key={i} fill={d.color} />)}
                     </Pie>
-                    <Tooltip contentStyle={{ backgroundColor: '#182235', border: '1px solid #2B3952', borderRadius: 8 }} itemStyle={{ color: '#F5F7FB' }} />
+                    <Tooltip contentStyle={{ backgroundColor: 'hsl(0, 0%, 9%)', border: '1px solid hsl(0, 0%, 18%)', borderRadius: 8 }} itemStyle={{ color: 'hsl(0, 0%, 100%)' }} />
                   </PieChart>
                 </ResponsiveContainer>
               </div>
@@ -147,10 +147,10 @@ const AdminPage = () => {
             <div className="h-[200px]">
               <ResponsiveContainer width="100%" height="100%">
                 <BarChart data={funnelData}>
-                  <CartesianGrid strokeDasharray="3 3" stroke="#2B3952" vertical={false} />
-                  <XAxis dataKey="step" stroke="#7F8AA3" fontSize={11} tickLine={false} axisLine={false} />
-                  <YAxis stroke="#7F8AA3" fontSize={11} tickLine={false} axisLine={false} />
-                  <Tooltip contentStyle={{ backgroundColor: '#182235', border: '1px solid #2B3952', borderRadius: 8 }} itemStyle={{ color: '#F5F7FB' }} />
+                  <CartesianGrid strokeDasharray="3 3" stroke="hsl(0, 0%, 18%)" vertical={false} />
+                  <XAxis dataKey="step" stroke="hsl(0, 0%, 55%)" fontSize={11} tickLine={false} axisLine={false} />
+                  <YAxis stroke="hsl(0, 0%, 55%)" fontSize={11} tickLine={false} axisLine={false} />
+                  <Tooltip contentStyle={{ backgroundColor: 'hsl(0, 0%, 9%)', border: '1px solid hsl(0, 0%, 18%)', borderRadius: 8 }} itemStyle={{ color: 'hsl(0, 0%, 100%)' }} />
                   <Bar dataKey="value" radius={[6, 6, 0, 0]} name="Usuários">
                     {funnelData.map((_, i) => <Cell key={i} fill={`hsl(${145 - i * 15}, 60%, ${50 - i * 5}%)`} />)}
                   </Bar>
