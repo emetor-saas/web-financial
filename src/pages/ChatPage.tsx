@@ -1,6 +1,10 @@
 import { useState, useRef, useEffect } from 'react';
-import { Sparkles, Send, Loader2 } from 'lucide-react';
+import { Link } from 'react-router-dom';
+import { Sparkles, Send, Loader2, Crown } from 'lucide-react';
 import { cn } from '@/lib/utils';
+import { askFinancialAssistant } from '@/services/aiAssistant';
+import { useAuth } from '@/context/AuthContext';
+import { tenantCanUseChat } from '@/lib/billing';
 
 type MessageRole = 'user' | 'assistant';
 
@@ -11,14 +15,8 @@ interface Message {
   timestamp: Date;
 }
 
-const MOCK_RESPONSES = [
-  'Com base no seu perfil, recomendo priorizar a quitação do cartão de crédito e manter o aporte na reserva de emergência. Quer que eu detalhe um plano?',
-  'Sua saúde financeira está em nível equilibrado. Os principais pontos de atenção são os gastos variáveis e a meta de reserva. Posso sugerir próximos passos.',
-  'Entendi. Posso ajudar a revisar suas metas, analisar dívidas ou sugerir insights a partir do seu diagnóstico. O que prefere?',
-  'Ótima pergunta. A AURA analisa seu fluxo de caixa, dívidas e metas para gerar um score e recomendações personalizadas. Quer explorar algum módulo em específico?',
-];
-
 export default function ChatPage() {
+  const { user } = useAuth();
   const [messages, setMessages] = useState<Message[]>([]);
   const [input, setInput] = useState('');
   const [isTyping, setIsTyping] = useState(false);
@@ -28,7 +26,7 @@ export default function ChatPage() {
     scrollRef.current?.scrollTo({ top: scrollRef.current.scrollHeight, behavior: 'smooth' });
   }, [messages, isTyping]);
 
-  const sendMessage = () => {
+  const sendMessage = async () => {
     const text = input.trim();
     if (!text || isTyping) return;
 
@@ -41,23 +39,27 @@ export default function ChatPage() {
     setMessages((prev) => [...prev, userMsg]);
     setInput('');
     setIsTyping(true);
-
-    const replyIndex = messages.length % MOCK_RESPONSES.length;
-    const reply = MOCK_RESPONSES[replyIndex];
-    const delay = 800 + Math.random() * 600;
-
-    setTimeout(() => {
-      setMessages((prev) => [
-        ...prev,
-        {
-          id: crypto.randomUUID(),
-          role: 'assistant',
-          content: reply,
-          timestamp: new Date(),
-        },
-      ]);
+    try {
+      const response = await askFinancialAssistant({ message: text, mode: 'tenant' });
+      const assistantMsg: Message = {
+        id: crypto.randomUUID(),
+        role: 'assistant',
+        content: response.answer,
+        timestamp: new Date(),
+      };
+      setMessages((prev) => [...prev, assistantMsg]);
+    } catch (error) {
+      const fallback: Message = {
+        id: crypto.randomUUID(),
+        role: 'assistant',
+        content:
+          'Não consegui falar com o agente financeiro agora. Verifique se a API está em execução em http://localhost:3001 e tente novamente.',
+        timestamp: new Date(),
+      };
+      setMessages((prev) => [...prev, fallback]);
+    } finally {
       setIsTyping(false);
-    }, delay);
+    }
   };
 
   const handleKeyDown = (e: React.KeyboardEvent) => {
@@ -66,6 +68,27 @@ export default function ChatPage() {
       sendMessage();
     }
   };
+
+  if (user && !tenantCanUseChat(user)) {
+    return (
+      <div className="max-w-lg mx-auto px-4 py-12 text-center space-y-4">
+        <div className="w-14 h-14 rounded-2xl bg-primary/10 border border-primary/20 flex items-center justify-center mx-auto">
+          <Crown size={28} className="text-primary" />
+        </div>
+        <h1 className="font-display text-xl font-semibold tracking-tight">Chat IA para assinantes</h1>
+        <p className="text-sm text-muted-foreground">
+          O assistente com IA está disponível apenas para planos pagos. Você ainda pode usar o app no período
+          de teste de 1 hora; para conversar com a AURA, assine um plano.
+        </p>
+        <Link
+          to="/app/planos"
+          className="inline-flex items-center justify-center rounded-xl bg-primary text-primary-foreground px-5 py-2.5 text-sm font-semibold shadow hover:bg-primary/90"
+        >
+          Ver planos e assinar
+        </Link>
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-[calc(100dvh-8rem)] sm:min-h-[calc(100dvh-10rem)] flex flex-col max-w-3xl mx-auto w-full">

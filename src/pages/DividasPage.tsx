@@ -1,19 +1,25 @@
-import { useAuth } from '@/context/AuthContext';
 import { motion } from 'framer-motion';
 import { formatCurrency } from '@/utils/formatters';
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Cell } from 'recharts';
 import { AlertTriangle, TrendingDown, Shield } from 'lucide-react';
+import { useQuery } from '@tanstack/react-query';
+import { fetchDebts, type DebtSummary } from '@/services/debts';
 
 const anim = (i: number) => ({ initial: { opacity: 0, y: 15 }, animate: { opacity: 1, y: 0 }, transition: { delay: i * 0.05 } });
 
 const DividasPage = () => {
-  const { profileType, singleProfile, coupleProfile } = useAuth();
-  const debts = profileType === 'COUPLE' ? coupleProfile.debts : singleProfile.debts;
-  const totalDebt = debts.reduce((s, d) => s + d.balance, 0);
-  const totalMonthly = debts.reduce((s, d) => s + d.monthlyPayment, 0);
-  const totalSaving = debts.reduce((s, d) => s + d.potentialSaving, 0);
+  const { data: debts } = useQuery({
+    queryKey: ['debts'],
+    queryFn: fetchDebts,
+  });
 
-  const chartData = debts.map(d => ({ name: d.name, saldo: d.balance, juros: d.interestRate }));
+  const list: DebtSummary[] = debts ?? [];
+
+  const totalDebt = list.reduce((s, d) => s + d.balance, 0);
+  const totalMonthly = list.reduce((s, d) => s + d.monthlyPayment, 0);
+  const totalSaving = list.reduce((s, d) => s + d.potentialSaving, 0);
+
+  const chartData = list.map(d => ({ name: d.name, saldo: d.balance, juros: d.interestRate }));
 
   return (
     <div className="p-4 sm:p-6 lg:p-8 space-y-6 max-w-5xl mx-auto">
@@ -62,7 +68,10 @@ const DividasPage = () => {
       {/* Debt Cards */}
       <div className="space-y-4">
         <h3 className="font-display font-semibold">Ordem de Ataque Recomendada</h3>
-        {debts.sort((a, b) => a.attackOrder - b.attackOrder).map((d, i) => (
+        {list
+          .slice()
+          .sort((a, b) => a.attackOrder - b.attackOrder)
+          .map((d, i) => (
           <motion.div key={d.id} {...anim(5 + i)} className="bg-card border border-border rounded-xl p-5">
             <div className="flex items-start justify-between mb-3">
               <div>
@@ -88,9 +97,9 @@ const DividasPage = () => {
       <motion.div {...anim(8)} className="bg-primary/10 border border-primary/20 rounded-xl p-6">
         <h3 className="font-display font-semibold text-primary mb-2">Estratégia Recomendada</h3>
         <p className="text-sm text-muted-foreground leading-relaxed">
-          Priorize a quitação da dívida com maior taxa de juros primeiro (método avalanche). 
-          Concentre aportes extras no Cartão Nubank para eliminar os 14,5% a.m. de juros. 
-          Após quitá-lo, redirecione o valor da parcela para o empréstimo pessoal.
+          Priorize a quitação das dívidas com maior taxa de juros (método avalanche). Concentre aportes extras nas
+          primeiras posições da lista acima; conforme cada uma é quitada, redirecione o valor da parcela para a próxima
+          dívida em ordem.
         </p>
       </motion.div>
     </div>

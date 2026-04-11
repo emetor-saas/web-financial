@@ -1,31 +1,67 @@
-import { useAuth } from '@/context/AuthContext';
 import { motion } from 'framer-motion';
 import { CheckCircle2, Circle, Clock, Zap, ArrowUp } from 'lucide-react';
-import { getPriorityColor } from '@/utils/formatters';
 import { useState } from 'react';
+import { useQuery } from '@tanstack/react-query';
+import { apiFetch } from '@/lib/apiClient';
 
 const anim = (i: number) => ({ initial: { opacity: 0, y: 15 }, animate: { opacity: 1, y: 0 }, transition: { delay: i * 0.05 } });
 
 const PlanoDeAcaoPage = () => {
-  const { profileType, singleProfile, coupleProfile, updateSingleProfile, updateCoupleProfile } = useAuth();
-  const isCouple = profileType === 'COUPLE';
-  const actions = isCouple ? coupleProfile.actions : singleProfile.actions;
-  const [filter, setFilter] = useState<'all' | 'high' | 'medium' | 'low'>('all');
+  const { data } = useQuery({
+    queryKey: ['diagnostic-current'],
+    queryFn: () => apiFetch<any>('/api/diagnostic/current'),
+  });
 
-  const toggleAction = (id: number) => {
-    if (isCouple) {
-      updateCoupleProfile({
-        actions: coupleProfile.actions.map(a => a.id === id ? { ...a, completed: !a.completed } : a),
-      });
-    } else {
-      updateSingleProfile({
-        actions: singleProfile.actions.map(a => a.id === id ? { ...a, completed: !a.completed } : a),
-      });
-    }
+  const actions =
+    [
+      ...(data?.actionPlan?.today ?? []).map((title: string) => ({
+        id: `today-${title}`,
+        bucket: 'Hoje',
+        title,
+      })),
+      ...(data?.actionPlan?.next7Days ?? []).map((title: string) => ({
+        id: `7d-${title}`,
+        bucket: 'Próximos 7 dias',
+        title,
+      })),
+      ...(data?.actionPlan?.next30Days ?? []).map((title: string) => ({
+        id: `30d-${title}`,
+        bucket: 'Próximos 30 dias',
+        title,
+      })),
+      ...(data?.actionPlan?.next90Days ?? []).map((title: string) => ({
+        id: `90d-${title}`,
+        bucket: 'Próximos 90 dias',
+        title,
+      })),
+    ] as { id: string; bucket: string; title: string }[];
+
+  const [completedIds, setCompletedIds] = useState<Set<string>>(new Set());
+  const [filter, setFilter] = useState<'all' | 'today' | '7d' | '30d' | '90d'>('all');
+
+  const toggleAction = (id: string) => {
+    setCompletedIds(prev => {
+      const next = new Set(prev);
+      if (next.has(id)) next.delete(id);
+      else next.add(id);
+      return next;
+    });
   };
 
-  const filtered = filter === 'all' ? actions : actions.filter(a => a.priority === filter);
-  const completedCount = actions.filter(a => a.completed).length;
+  const filtered =
+    filter === 'all'
+      ? actions
+      : actions.filter(a =>
+          filter === 'today'
+            ? a.bucket === 'Hoje'
+            : filter === '7d'
+              ? a.bucket === 'Próximos 7 dias'
+              : filter === '30d'
+                ? a.bucket === 'Próximos 30 dias'
+                : a.bucket === 'Próximos 90 dias',
+        );
+
+  const completedCount = actions.filter(a => completedIds.has(a.id)).length;
   const progress = actions.length > 0 ? Math.round((completedCount / actions.length) * 100) : 0;
 
   return (
@@ -54,7 +90,7 @@ const PlanoDeAcaoPage = () => {
 
       {/* Filters */}
       <div className="flex gap-2 flex-wrap">
-        {(['all', 'high', 'medium', 'low'] as const).map(f => (
+        {(['all', 'today', '7d', '30d', '90d'] as const).map(f => (
           <button
             key={f}
             onClick={() => setFilter(f)}
@@ -62,7 +98,15 @@ const PlanoDeAcaoPage = () => {
               filter === f ? 'bg-primary text-primary-foreground' : 'bg-accent text-muted-foreground hover:text-foreground'
             }`}
           >
-            {f === 'all' ? 'Todas' : f === 'high' ? 'Alta' : f === 'medium' ? 'Média' : 'Baixa'}
+            {f === 'all'
+              ? 'Todas'
+              : f === 'today'
+                ? 'Hoje'
+                : f === '7d'
+                  ? 'Próx. 7 dias'
+                  : f === '30d'
+                    ? 'Próx. 30 dias'
+                    : 'Próx. 90 dias'}
           </button>
         ))}
       </div>
@@ -74,28 +118,30 @@ const PlanoDeAcaoPage = () => {
             key={action.id}
             {...anim(2 + i)}
             className={`bg-card border rounded-xl p-5 transition-all duration-200 hover:-translate-y-0.5 ${
-              action.completed ? 'border-border/50 opacity-60' : 'border-border'
+              completedIds.has(action.id) ? 'border-border/50 opacity-60' : 'border-border'
             }`}
           >
             <div className="flex items-start gap-4">
               <button onClick={() => toggleAction(action.id)} className="mt-0.5 flex-shrink-0">
-                {action.completed
+                {completedIds.has(action.id)
                   ? <CheckCircle2 size={20} className="text-success" />
                   : <Circle size={20} className="text-muted-foreground hover:text-primary transition-colors" />
                 }
               </button>
               <div className="flex-1 min-w-0">
                 <div className="flex items-center gap-2 flex-wrap mb-1">
-                  <h4 className={`font-semibold text-sm ${action.completed ? 'line-through' : ''}`}>{action.title}</h4>
-                  <span className={`text-xs px-2 py-0.5 rounded border ${getPriorityColor(action.priority)}`}>
-                    {action.priority === 'high' ? 'Alta' : action.priority === 'medium' ? 'Média' : 'Baixa'}
+                  <h4 className={`font-semibold text-sm ${completedIds.has(action.id) ? 'line-through' : ''}`}>{action.title}</h4>
+                  <span className="text-[11px] px-2 py-0.5 rounded border bg-accent text-muted-foreground">
+                    {action.bucket}
                   </span>
                 </div>
-                <p className="text-xs text-muted-foreground mb-2">{action.description}</p>
+                <p className="text-xs text-muted-foreground mb-2">
+                  Ação sugerida automaticamente com base no seu diagnóstico.
+                </p>
                 <div className="flex items-center gap-4 text-xs text-muted-foreground">
-                  <span className="flex items-center gap-1"><Zap size={12} className="text-primary" /> {action.impact}</span>
-                  <span className="flex items-center gap-1"><Clock size={12} /> {action.deadline}</span>
-                  <span className="flex items-center gap-1"><ArrowUp size={12} /> {action.difficulty === 'easy' ? 'Fácil' : action.difficulty === 'medium' ? 'Moderada' : 'Difícil'}</span>
+                  <span className="flex items-center gap-1"><Zap size={12} className="text-primary" /> Diagnóstico</span>
+                  <span className="flex items-center gap-1"><Clock size={12} /> {action.bucket}</span>
+                  <span className="flex items-center gap-1"><ArrowUp size={12} /> Impacto alto</span>
                 </div>
               </div>
             </div>

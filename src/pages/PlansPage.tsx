@@ -1,0 +1,370 @@
+import { useState, useMemo, useEffect } from 'react';
+import { useSearchParams } from 'react-router-dom';
+import { useQuery, useMutation } from '@tanstack/react-query';
+import { useAuth } from '@/context/AuthContext';
+import { listPublicPlans, createCheckout } from '@/services/plans';
+import {
+  listMasterPlans,
+  createMasterPlan,
+  updateMasterPlan,
+  deactivateMasterPlan,
+} from '@/services/masterPlans';
+import { toast } from 'sonner';
+import { CreditCard, Crown, Loader2, Plus, CheckCircle2, Trash2 } from 'lucide-react';
+
+function formatPrice(amountInCents: number, currency: string) {
+  if (amountInCents === 0) return 'Gratuito';
+  return (amountInCents / 100).toLocaleString('pt-BR', {
+    style: 'currency',
+    currency: currency.toUpperCase(),
+  });
+}
+
+const PlansPage = () => {
+  const { user } = useAuth();
+  const isMaster = user?.role === 'MASTER';
+  return isMaster ? <MasterPlansSection /> : <TenantPlansSection />;
+};
+
+type BillingPm = {
+  brand: string | null;
+  last4: string | null;
+  expMonth: number | null;
+  expYear: number | null;
+};
+
+function formatBillingCardLabel(pm: BillingPm) {
+  const brand = pm.brand ? pm.brand.replace(/_/g, ' ') : 'Cartão';
+  if (pm.last4) return `${brand} •••• ${pm.last4}`;
+  return brand;
+}
+
+const TenantPlansSection = () => {
+  const { refreshUser, user } = useAuth();
+  const [searchParams, setSearchParams] = useSearchParams();
+
+  const { data: plans, isLoading } = useQuery({
+    queryKey: ['plans-public'],
+    queryFn: listPublicPlans,
+  });
+
+  useEffect(() => {
+    const checkout = searchParams.get('checkout');
+    if (!checkout) return;
+    if (checkout === 'success') {
+      void refreshUser().then(() => {
+        toast.success('Assinatura confirmada. Seu acesso foi atualizado.');
+      });
+    } else if (checkout === 'cancel') {
+      toast.message('Checkout cancelado. Você pode tentar de novo quando quiser.');
+    }
+    const next = new URLSearchParams(searchParams);
+    next.delete('checkout');
+    setSearchParams(next, { replace: true });
+  }, [searchParams, setSearchParams, refreshUser]);
+
+  const checkoutMutation = useMutation({
+    mutationFn: (priceId: string) => createCheckout(priceId),
+    onSuccess: (res) => {
+      if (res.url) {
+        window.location.href = res.url;
+      } else {
+        toast.error('Não foi possível abrir o checkout.');
+      }
+    },
+    onError: (err) => {
+      toast.error(err instanceof Error ? err.message : 'Erro ao iniciar checkout.');
+    },
+  });
+
+  return (
+    <div className="p-4 sm:p-6 lg:p-8 space-y-6 max-w-5xl mx-auto">
+      <header className="space-y-2">
+        <h1 className="font-display text-2xl lg:text-3xl font-black tracking-tight flex items-center gap-2">
+          <CreditCard size={20} />
+          Planos e Assinatura
+        </h1>
+        <p className="text-muted-foreground text-sm">
+          Escolha o plano que melhor se encaixa na sua jornada financeira.
+        </p>
+        <p className="text-xs text-amber-600/90 dark:text-amber-400/90 rounded-xl border border-amber-500/25 bg-amber-500/5 px-3 py-2">
+          Novos cadastros têm <strong>1 hora</strong> de teste do app. Depois disso é necessário assinar um plano
+          pago para continuar. O <strong>chat com IA</strong> só libera com assinatura paga.
+        </p>
+        {user?.household?.billingPaymentMethod && (
+          <p className="text-xs text-muted-foreground rounded-xl border border-border bg-muted/20 px-3 py-2 flex items-center gap-2">
+            <CreditCard size={14} className="text-primary shrink-0" />
+            <span>
+              Pagamento da assinatura:{' '}
+              <strong className="text-foreground">{formatBillingCardLabel(user.household.billingPaymentMethod)}</strong>
+              {user.household.billingPaymentMethod.expMonth != null &&
+                user.household.billingPaymentMethod.expYear != null && (
+                  <>
+                    {' '}
+                    (validade {String(user.household.billingPaymentMethod.expMonth).padStart(2, '0')}/
+                    {user.household.billingPaymentMethod.expYear})
+                  </>
+                )}
+            </span>
+          </p>
+        )}
+      </header>
+
+      {isLoading || !plans ? (
+        <p className="text-sm text-muted-foreground">Carregando planos...</p>
+      ) : (
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+          {plans.map((plan) => {
+            const isFree = plan.amountInCents === 0;
+            return (
+              <div
+                key={plan.id}
+                className="card-solid rounded-2xl p-5 flex flex-col justify-between border border-border hover:border-primary/40 transition-all duration-200"
+              >
+                <div className="space-y-2">
+                  <div className="flex items-center justify-between">
+                    <h2 className="font-display font-semibold tracking-tight">{plan.name}</h2>
+                    {isFree ? (
+                      <span className="text-[10px] font-semibold uppercase text-emerald-500 bg-emerald-500/10 px-2 py-0.5 rounded-full">
+                        Gratuito
+                      </span>
+                    ) : (
+                      <span className="text-[10px] font-semibold uppercase text-primary bg-primary/10 px-2 py-0.5 rounded-full">
+                        Assinatura
+                      </span>
+                    )}
+                  </div>
+                  {plan.description && (
+                    <p className="text-xs text-muted-foreground">{plan.description}</p>
+                  )}
+                  <p className="text-xl font-display font-bold mt-2">
+                    {formatPrice(plan.amountInCents, plan.currency)}
+                    {plan.interval === 'month' && (
+                      <span className="text-xs text-muted-foreground"> / mês</span>
+                    )}
+                  </p>
+                  {plan.trialDays != null && plan.trialDays > 0 && (
+                    <p className="text-[11px] text-emerald-500 flex items-center gap-1">
+                      <Crown size={12} /> {plan.trialDays} dias de teste grátis
+                    </p>
+                  )}
+                </div>
+                {isFree ? (
+                  <p className="mt-4 text-[11px] text-muted-foreground rounded-xl border border-border bg-muted/30 px-3 py-2">
+                    O acesso inicial é o trial de 1 hora. Não há plano gratuito permanente para tenants — escolha
+                    um plano pago para continuar após o teste.
+                  </p>
+                ) : (
+                  <button
+                    type="button"
+                    disabled={checkoutMutation.isPending || !plan.stripePriceId}
+                    onClick={() => plan.stripePriceId && checkoutMutation.mutate(plan.stripePriceId)}
+                    className="mt-4 inline-flex items-center justify-center rounded-xl bg-primary text-primary-foreground px-4 py-2 text-xs font-semibold shadow hover:bg-primary/90 disabled:opacity-60"
+                  >
+                    {checkoutMutation.isPending ? 'Redirecionando...' : 'Contratar plano'}
+                  </button>
+                )}
+              </div>
+            );
+          })}
+        </div>
+      )}
+    </div>
+  );
+};
+
+const MasterPlansSection = () => {
+  const { data: plans, isLoading, refetch } = useQuery({
+    queryKey: ['master-plans'],
+    queryFn: listMasterPlans,
+  });
+
+  const createMutation = useMutation({
+    mutationFn: createMasterPlan,
+    onSuccess: () => {
+      toast.success('Plano criado com sucesso.');
+      refetch();
+    },
+    onError: (err) => {
+      toast.error(err instanceof Error ? err.message : 'Erro ao criar plano.');
+    },
+  });
+
+  const updateMutation = useMutation({
+    mutationFn: ({ id, payload }: { id: string; payload: any }) => updateMasterPlan(id, payload),
+    onSuccess: () => {
+      toast.success('Plano atualizado.');
+      refetch();
+    },
+    onError: (err) => {
+      toast.error(err instanceof Error ? err.message : 'Erro ao atualizar plano.');
+    },
+  });
+
+  const deactivateMutation = useMutation({
+    mutationFn: (id: string) => deactivateMasterPlan(id),
+    onSuccess: () => {
+      toast.success('Plano desativado.');
+      refetch();
+    },
+    onError: (err) => {
+      toast.error(err instanceof Error ? err.message : 'Erro ao desativar plano.');
+    },
+  });
+
+  const [newName, setNewName] = useState('');
+  const [newCode, setNewCode] = useState('');
+  const [newPrice, setNewPrice] = useState('0');
+
+  const sortedPlans = useMemo(
+    () => (plans ?? []).slice().sort((a, b) => a.sortOrder - b.sortOrder),
+    [plans],
+  );
+
+  const handleCreate = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!newName || !newCode) return;
+    const amount = Math.round(Number(newPrice.replace(',', '.')) * 100);
+    createMutation.mutate({
+      code: newCode,
+      name: newName,
+      description: undefined,
+      interval: 'month',
+      intervalCount: 1,
+      amountInCents: Number.isNaN(amount) ? 0 : amount,
+      currency: 'brl',
+      sortOrder: (plans?.length ?? 0) + 1,
+    });
+  };
+
+  return (
+    <div className="p-4 sm:p-6 lg:p-8 space-y-6 max-w-5xl mx-auto">
+      <header className="space-y-2">
+        <h1 className="font-display text-2xl lg:text-3xl font-black tracking-tight flex items-center gap-2">
+          <Crown size={20} />
+          Gerenciar Planos (Master)
+        </h1>
+        <p className="text-muted-foreground text-sm">
+          Crie e organize os planos de assinatura que os clientes podem contratar.
+        </p>
+      </header>
+
+      <section className="card-solid rounded-2xl p-4 sm:p-6 space-y-4">
+        <h2 className="font-display font-semibold tracking-tight flex items-center gap-2">
+          <Plus size={16} />
+          Novo plano
+        </h2>
+        <form onSubmit={handleCreate} className="grid grid-cols-1 md:grid-cols-4 gap-3 items-end">
+          <div className="space-y-1">
+            <label className="text-[11px] text-muted-foreground uppercase font-semibold">
+              Código
+            </label>
+            <input
+              value={newCode}
+              onChange={(e) => setNewCode(e.target.value)}
+              placeholder="starter"
+              className="w-full rounded-xl border border-border bg-card px-3 py-2 text-sm outline-none focus:border-primary/60"
+              required
+            />
+          </div>
+          <div className="space-y-1 md:col-span-2">
+            <label className="text-[11px] text-muted-foreground uppercase font-semibold">
+              Nome
+            </label>
+            <input
+              value={newName}
+              onChange={(e) => setNewName(e.target.value)}
+              placeholder="Starter"
+              className="w-full rounded-xl border border-border bg-card px-3 py-2 text-sm outline-none focus:border-primary/60"
+              required
+            />
+          </div>
+          <div className="space-y-1">
+            <label className="text-[11px] text-muted-foreground uppercase font-semibold">
+              Preço (R$ / mês)
+            </label>
+            <input
+              value={newPrice}
+              onChange={(e) => setNewPrice(e.target.value)}
+              placeholder="0,00"
+              className="w-full rounded-xl border border-border bg-card px-3 py-2 text-sm outline-none focus:border-primary/60"
+            />
+          </div>
+          <button
+            type="submit"
+            disabled={createMutation.isPending}
+            className="md:col-span-4 inline-flex items-center justify-center rounded-xl bg-primary text-primary-foreground px-4 py-2 text-xs font-semibold shadow hover:bg-primary/90 disabled:opacity-60"
+          >
+            {createMutation.isPending ? (
+              <>
+                <Loader2 size={14} className="animate-spin mr-2" />
+                Criando...
+              </>
+            ) : (
+              <>
+                <Plus size={14} className="mr-2" />
+                Criar plano
+              </>
+            )}
+          </button>
+        </form>
+      </section>
+
+      <section className="card-solid rounded-2xl p-4 sm:p-6 space-y-3">
+        <h2 className="font-display font-semibold tracking-tight flex items-center gap-2">
+          <CheckCircle2 size={16} />
+          Planos cadastrados
+        </h2>
+        {isLoading || !sortedPlans.length ? (
+          <p className="text-sm text-muted-foreground">Nenhum plano cadastrado ainda.</p>
+        ) : (
+          <div className="space-y-3">
+            {sortedPlans.map((plan) => (
+              <div
+                key={plan.id}
+                className="flex items-center justify-between gap-3 border border-border rounded-xl px-3 py-2 bg-card"
+              >
+                <div className="space-y-0.5">
+                  <p className="text-sm font-medium">
+                    {plan.name}{' '}
+                    {!plan.isActive && (
+                      <span className="text-[10px] uppercase text-destructive ml-1">inativo</span>
+                    )}
+                  </p>
+                  <p className="text-[11px] text-muted-foreground">
+                    {plan.code} • {formatPrice(plan.amountInCents, plan.currency)} /{' '}
+                    {plan.interval === 'month' ? 'mês' : plan.interval}
+                  </p>
+                </div>
+                <div className="flex items-center gap-2">
+                  <button
+                    type="button"
+                    onClick={() =>
+                      updateMutation.mutate({
+                        id: plan.id,
+                        payload: { isActive: !plan.isActive },
+                      })
+                    }
+                    className="inline-flex items-center justify-center rounded-lg border border-border px-2 py-1 text-[11px] text-muted-foreground hover:bg-accent"
+                  >
+                    {plan.isActive ? 'Desativar' : 'Reativar'}
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => deactivateMutation.mutate(plan.id)}
+                    className="inline-flex items-center justify-center rounded-lg border border-border px-2 py-1 text-[11px] text-destructive hover:bg-destructive/10"
+                  >
+                    <Trash2 size={12} />
+                  </button>
+                </div>
+              </div>
+            ))}
+          </div>
+        )}
+      </section>
+    </div>
+  );
+};
+
+export default PlansPage;
+

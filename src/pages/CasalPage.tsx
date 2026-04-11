@@ -4,11 +4,18 @@ import { motion } from 'framer-motion';
 import { formatCurrency, getScoreColor, getScoreLabel } from '@/utils/formatters';
 import { Users, BrainCircuit, Calendar, CheckCircle2, Circle, MessageCircle, AlertTriangle } from 'lucide-react';
 import { PieChart, Pie, Cell, ResponsiveContainer, BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip } from 'recharts';
+import { useQuery } from '@tanstack/react-query';
+import { fetchCoupleOverview } from '@/services/couple';
 
 const anim = (i: number) => ({ initial: { opacity: 0, y: 15 }, animate: { opacity: 1, y: 0 }, transition: { delay: i * 0.05 } });
 
 const CasalPage = () => {
   const { profileType, coupleProfile: p } = useAuth();
+  const { data: couple } = useQuery({
+    queryKey: ['couple-overview'],
+    queryFn: fetchCoupleOverview,
+    enabled: profileType === 'COUPLE',
+  });
 
   if (profileType !== 'COUPLE') return <Navigate to="/app/dashboard" replace />;
 
@@ -36,6 +43,38 @@ const CasalPage = () => {
           <p className="text-muted-foreground text-sm">{p.name} — Gestão financeira compartilhada.</p>
         </div>
       </motion.div>
+
+      {/* Diagnóstico de alinhamento do casal */}
+      {couple && (
+        <motion.div {...anim(0.5)} className="bg-card border border-border rounded-xl p-5 flex flex-col sm:flex-row gap-4 items-start sm:items-center">
+          <div className="w-10 h-10 rounded-full bg-primary/15 flex items-center justify-center flex-shrink-0">
+            <BrainCircuit size={18} className="text-primary" />
+          </div>
+          <div className="flex-1 space-y-1">
+            <p className="text-xs font-semibold uppercase tracking-widest text-muted-foreground">
+              Alinhamento financeiro do casal
+            </p>
+            <p className="text-sm">
+              <span className="font-semibold">
+                {couple.alignmentLevel === 'desalinhado'
+                  ? 'Desalinhado'
+                  : couple.alignmentLevel === 'fragil'
+                    ? 'Frágil'
+                    : couple.alignmentLevel === 'razoavel'
+                      ? 'Razoável'
+                      : couple.alignmentLevel === 'bom'
+                        ? 'Bom'
+                        : 'Forte'}
+              </span>{' '}
+              — {couple.mainTension}
+            </p>
+            <p className="text-xs text-muted-foreground">
+              Próxima decisão em conjunto:{' '}
+              <span className="font-medium text-foreground">{couple.mainDecision}</span>
+            </p>
+          </div>
+        </motion.div>
+      )}
 
       {/* Scores Side by Side */}
       <div className="grid grid-cols-1 md:grid-cols-3 gap-4">

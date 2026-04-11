@@ -1,6 +1,8 @@
 import React, { createContext, useContext, useState, useEffect, type ReactNode } from 'react';
 import type { ProfileType, SingleProfile, CoupleProfile, AdminProfile } from '@/types';
 import { SINGLE_PROFILE, COUPLE_PROFILE, ADMIN_PROFILE } from '@/data/mockData';
+import type { AuthUser } from '@/services/auth';
+import { fetchMe, login as apiLogin, logout as apiLogout } from '@/services/auth';
 
 interface AuthContextType {
   isAuthenticated: boolean;
@@ -8,9 +10,12 @@ interface AuthContextType {
   singleProfile: SingleProfile;
   coupleProfile: CoupleProfile;
   adminProfile: AdminProfile;
-  login: (type: ProfileType) => void;
-  logout: () => void;
-  switchProfile: (type: ProfileType) => void;
+  user: AuthUser | null;
+  loginWithCredentials: (email: string, password: string) => Promise<void>;
+  logout: () => Promise<void>;
+  /** Atualiza usuário/billing após checkout Stripe ou mudança de plano */
+  refreshUser: () => Promise<void>;
+  switchProfileDemo: (type: ProfileType) => void;
   userName: string;
   updateSingleProfile: (updates: Partial<SingleProfile>) => void;
   updateCoupleProfile: (updates: Partial<CoupleProfile>) => void;
@@ -24,68 +29,95 @@ export const useAuth = () => {
   return ctx;
 };
 
+function mapRoleToProfileType(role: string | undefined | null): ProfileType {
+  if (role === 'MASTER') return 'ADMIN';
+  // Por enquanto, todo usuário comum usa o perfil "SINGLE" no layout
+  return 'SINGLE';
+}
+
 export const AuthProvider = ({ children }: { children: ReactNode }) => {
-  const [isAuthenticated, setIsAuthenticated] = useState(() => {
-    return localStorage.getItem('aura_auth') === 'true';
-  });
-  const [profileType, setProfileType] = useState<ProfileType | null>(() => {
-    return (localStorage.getItem('aura_profile') as ProfileType) || null;
-  });
-  const [singleProfile, setSingleProfile] = useState<SingleProfile>(() => {
-    const stored = localStorage.getItem('aura_single_data');
-    return stored ? JSON.parse(stored) : SINGLE_PROFILE;
-  });
-  const [coupleProfile, setCoupleProfile] = useState<CoupleProfile>(() => {
-    const stored = localStorage.getItem('aura_couple_data');
-    return stored ? JSON.parse(stored) : COUPLE_PROFILE;
-  });
+  const [user, setUser] = useState<AuthUser | null>(null);
+  const [isAuthenticated, setIsAuthenticated] = useState(false);
+  const [loaded, setLoaded] = useState(false);
+
+  const [profileType, setProfileType] = useState<ProfileType | null>(null);
+  const [singleProfile, setSingleProfile] = useState<SingleProfile>(SINGLE_PROFILE);
+  const [coupleProfile, setCoupleProfile] = useState<CoupleProfile>(COUPLE_PROFILE);
   const adminProfile = ADMIN_PROFILE;
 
   useEffect(() => {
-    localStorage.setItem('aura_auth', String(isAuthenticated));
-    localStorage.setItem('aura_profile', profileType || '');
-  }, [isAuthenticated, profileType]);
+    // Tenta recuperar sessão pelo cookie httpOnly chamando /api/auth/me
+    fetchMe()
+      .then((me) => {
+        if (me) {
+          setUser(me);
+          setIsAuthenticated(true);
+          setProfileType(mapRoleToProfileType(me.role));
+        }
+      })
+      .finally(() => setLoaded(true));
+  }, []);
 
-  useEffect(() => {
-    localStorage.setItem('aura_single_data', JSON.stringify(singleProfile));
-  }, [singleProfile]);
-
-  useEffect(() => {
-    localStorage.setItem('aura_couple_data', JSON.stringify(coupleProfile));
-  }, [coupleProfile]);
-
-  const login = (type: ProfileType) => {
-    setProfileType(type);
+  const loginWithCredentials = async (email: string, password: string) => {
+    const loggedUser = await apiLogin(email, password);
+    setUser(loggedUser);
     setIsAuthenticated(true);
+    setProfileType(mapRoleToProfileType(loggedUser.role));
   };
 
-  const logout = () => {
+  const logout = async () => {
+    await apiLogout();
+    setUser(null);
     setIsAuthenticated(false);
     setProfileType(null);
   };
 
-  const switchProfile = (type: ProfileType) => {
+  const switchProfileDemo = (type: ProfileType) => {
     setProfileType(type);
   };
 
-  const userName = profileType === 'SINGLE' ? singleProfile.name
-    : profileType === 'COUPLE' ? coupleProfile.name
-    : profileType === 'ADMIN' ? adminProfile.name : '';
+  const userName =
+    user?.name ||
+    (profileType === 'SINGLE'
+      ? singleProfile.name
+      : profileType === 'COUPLE'
+        ? coupleProfile.name
+        : profileType === 'ADMIN'
+          ? adminProfile.name
+          : '');
 
   const updateSingleProfile = (updates: Partial<SingleProfile>) => {
-    setSingleProfile(prev => ({ ...prev, ...updates }));
+    setSingleProfile((prev) => ({ ...prev, ...updates }));
   };
 
   const updateCoupleProfile = (updates: Partial<CoupleProfile>) => {
-    setCoupleProfile(prev => ({ ...prev, ...updates }));
+    setCoupleProfile((prev) => ({ ...prev, ...updates }));
   };
 
+  if (!loaded) {
+    return null;
+  }
+
   return (
-    <AuthContext.Provider value={{
-      isAuthenticated, profileType, singleProfile, coupleProfile, adminProfile,
-      login, logout, switchProfile, userName, updateSingleProfile, updateCoupleProfile,
-    }}>
+    <AuthContext.Provider
+      value={{
+        isAuthenticated,
+        profileType,
+        singleProfile,
+        coupleProfile,
+        adminProfile,
+        user,
+        loginWithCredentials,
+        logout,
+        refreshUser,
+        switchProfileDemo,
+        userName,
+        updateSingleProfile,
+        updateCoupleProfile,
+      }}
+    >
       {children}
     </AuthContext.Provider>
   );
 };
+

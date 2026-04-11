@@ -7,6 +7,8 @@ import { TooltipProvider } from "@/components/ui/tooltip";
 import { AuthProvider } from "@/context/AuthContext";
 import { AppLayout } from "@/components/AppLayout";
 import LoginPage from "@/pages/LoginPage";
+import RegisterPage from "@/pages/RegisterPage";
+import OnboardingPage from "@/pages/OnboardingPage";
 import DashboardPage from "@/pages/DashboardPage";
 import DiagnosticoPage from "@/pages/DiagnosticoPage";
 import PlanoDeAcaoPage from "@/pages/PlanoDeAcaoPage";
@@ -17,6 +19,9 @@ import PerfilPage from "@/pages/PerfilPage";
 import CasalPage from "@/pages/CasalPage";
 import AdminPage from "@/pages/AdminPage";
 import ChatPage from "@/pages/ChatPage";
+import ExtratosPage from "@/pages/ExtratosPage";
+import ExtratoJobPage from "@/pages/ExtratoJobPage";
+import PlansPage from "@/pages/PlansPage";
 import NotFound from "@/pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -31,6 +36,8 @@ const App = () => (
         <BrowserRouter>
           <Routes>
             <Route path="/login" element={<LoginPage />} />
+            <Route path="/cadastro" element={<RegisterPage />} />
+            <Route path="/onboarding" element={<OnboardingPage />} />
             <Route path="/app" element={<AppLayout />}>
               <Route path="dashboard" element={<DashboardPage />} />
               <Route path="diagnostico" element={<DiagnosticoPage />} />
@@ -38,6 +45,9 @@ const App = () => (
               <Route path="dividas" element={<DividasPage />} />
               <Route path="metas" element={<MetasPage />} />
               <Route path="insights" element={<InsightsPage />} />
+              <Route path="extratos" element={<ExtratosPage />} />
+              <Route path="extratos/:id" element={<ExtratoJobPage />} />
+              <Route path="planos" element={<PlansPage />} />
               <Route path="perfil" element={<PerfilPage />} />
               <Route path="casal" element={<CasalPage />} />
               <Route path="admin" element={<AdminPage />} />

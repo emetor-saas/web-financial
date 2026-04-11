@@ -2,7 +2,7 @@ import { useLocation, useNavigate, Link } from 'react-router-dom';
 import { useAuth } from '@/context/AuthContext';
 import {
   LayoutDashboard, Activity, ShieldCheck, CreditCard, Target,
-  BrainCircuit, User, Users, Settings, LogOut, Sparkles,
+  BrainCircuit, User, Users, Settings, LogOut, Sparkles, FileText, Crown,
 } from 'lucide-react';
 import { Sheet, SheetContent } from '@/components/ui/sheet';
 import { cn } from '@/lib/utils';
@@ -26,10 +26,14 @@ interface MobileNavProps {
 }
 
 export const MobileNav = ({ open, onOpenChange }: MobileNavProps) => {
-  const { profileType, logout, userName } = useAuth();
+  const { profileType, logout, userName, user } = useAuth();
   const location = useLocation();
   const navigate = useNavigate();
-  const filteredItems = NAV_ITEMS.filter(item => profileType && item.roles.includes(profileType));
+  const filteredItems = NAV_ITEMS.filter((item) => {
+    if (!profileType || !item.roles.includes(profileType)) return false;
+    if (item.path === '/app/chat' && !tenantCanUseChat(user)) return false;
+    return true;
+  });
 
   const handleClose = () => onOpenChange(false);
 

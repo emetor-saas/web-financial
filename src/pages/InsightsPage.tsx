@@ -1,8 +1,9 @@
-import { useAuth } from '@/context/AuthContext';
 import { motion } from 'framer-motion';
 import { BrainCircuit, Zap, TrendingUp, AlertTriangle, Eye, BarChart3, Clock } from 'lucide-react';
 import { getSeverityColor } from '@/utils/formatters';
 import { useState } from 'react';
+import { useQuery } from '@tanstack/react-query';
+import { fetchAlerts } from '@/services/alerts';
 
 const anim = (i: number) => ({ initial: { opacity: 0, y: 12 }, animate: { opacity: 1, y: 0 }, transition: { delay: i * 0.04, duration: 0.25 } });
 
@@ -29,8 +30,26 @@ const timeLabels: Record<string, string> = {
 };
 
 const InsightsPage = () => {
-  const { profileType, singleProfile, coupleProfile } = useAuth();
-  const insights = profileType === 'COUPLE' ? coupleProfile.insights : singleProfile.insights;
+  const { data } = useQuery({
+    queryKey: ['alerts'],
+    queryFn: fetchAlerts,
+  });
+
+  const insights =
+    data?.alerts.map((a) => ({
+      id: a.id,
+      title: a.title,
+      text: a.description,
+      severity: a.severity === 'critical' ? 'critical' : a.severity === 'high' ? 'high' : a.severity === 'medium' ? 'medium' : 'low',
+      category: a.type === 'danger' ? 'risk' : a.type === 'warning' ? 'trend' : 'economy',
+      impact: a.severity === 'critical' || a.severity === 'high' ? 'Alto' : a.severity === 'medium' ? 'Médio' : 'Baixo',
+      timeframe: a.horizon === 'short' ? '7d' : a.horizon === 'medium' ? '15d' : '30d',
+      action: a.horizon === 'short'
+        ? 'Reserve alguns minutos ainda hoje para revisar seu fluxo e tomar uma decisão pequena, mas concreta.'
+        : a.horizon === 'medium'
+          ? 'Ajuste limites de gastos e defina um plano simples para as próximas semanas.'
+          : 'Planeje, com calma, como quer reposicionar sua casa financeira nos próximos meses.',
+    })) ?? [];
   const [activeFilter, setActiveFilter] = useState<string>('all');
 
   const filtered = activeFilter === 'all' ? insights : insights.filter(i => i.category === activeFilter);

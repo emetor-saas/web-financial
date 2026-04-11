@@ -1,18 +1,43 @@
 import { useState } from 'react';
-import { Outlet, Navigate } from 'react-router-dom';
+import { Outlet, Navigate, useLocation } from 'react-router-dom';
 import { useAuth } from '@/context/AuthContext';
 import { useIsMobile } from '@/hooks/use-mobile';
 import { AppSidebar } from '@/components/AppSidebar';
 import { Topbar } from '@/components/Topbar';
 import { MobileNav } from '@/components/MobileNav';
+import { useQuery } from '@tanstack/react-query';
+import { fetchOnboardingStatus } from '@/services/onboarding';
+import { tenantCanUseApp } from '@/lib/billing';
 
 export const AppLayout = () => {
-  const { isAuthenticated } = useAuth();
+  const { isAuthenticated, user } = useAuth();
   const isMobile = useIsMobile();
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+  const location = useLocation();
+
+  const { data: onboardingStatus } = useQuery({
+    queryKey: ['onboarding-status'],
+    queryFn: fetchOnboardingStatus,
+    enabled: isAuthenticated,
+  });
 
   if (!isAuthenticated) {
     return <Navigate to="/login" replace />;
+  }
+
+  const insideOnboarding = location.pathname.startsWith('/onboarding');
+  const hasOnboarding = onboardingStatus?.hasOnboarding;
+
+  // Se o usuário ainda não fez onboarding, força passar primeiro pelo fluxo
+  if (isAuthenticated && onboardingStatus && !hasOnboarding && !insideOnboarding) {
+    return <Navigate to="/onboarding" replace />;
+  }
+
+  // Trial de 1h encerrado sem assinatura: só planos (e master continua com acesso total)
+  const onPlanos =
+    location.pathname === '/app/planos' || location.pathname.startsWith('/app/planos/');
+  if (isAuthenticated && hasOnboarding && user && !tenantCanUseApp(user) && !onPlanos) {
+    return <Navigate to="/app/planos" replace />;
   }
 
   return (
