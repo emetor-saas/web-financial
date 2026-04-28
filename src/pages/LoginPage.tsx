@@ -42,7 +42,7 @@ const LoginPage = () => {
             <BrainCircuit size={32} className="text-primary-foreground" />
           </div>
           <div>
-            <h1 className="font-display text-3xl font-black text-foreground tracking-tight">Financial Casa</h1>
+            <h1 className="font-display text-3xl font-black text-foreground tracking-tight">Clareza</h1>
             <p className="text-muted-foreground text-sm mt-1.5">
               Entre para acessar seu diagnóstico e planos financeiros.
             </p>
