@@ -78,6 +78,31 @@ export async function updateImportRow(
   });
 }
 
+export async function createImportRow(
+  jobId: string,
+  payload: {
+    date: string | null;
+    description: string;
+    merchant: string | null;
+    amount: number;
+    type: 'INCOME' | 'EXPENSE' | 'TRANSFER';
+    categoryId: string | null;
+    selectedForImport?: boolean;
+    notes?: string | null;
+  },
+): Promise<ImportRow> {
+  return apiFetch<ImportRow>(`/api/import-jobs/${jobId}/rows`, {
+    method: 'POST',
+    body: JSON.stringify(payload),
+  });
+}
+
+export async function deleteImportRow(jobId: string, rowId: string): Promise<{ success: boolean }> {
+  return apiFetch<{ success: boolean }>(`/api/import-jobs/${jobId}/rows/${rowId}`, {
+    method: 'DELETE',
+  });
+}
+
 export async function approveSelectedRows(jobId: string): Promise<{ updatedCount: number }> {
   return apiFetch<{ updatedCount: number }>(`/api/import-jobs/${jobId}/approve-selected`, {
     method: 'POST',

@@ -4,12 +4,23 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import {
   fetchImportJobDetail,
   updateImportRow,
+  createImportRow,
+  deleteImportRow,
   approveSelectedRows,
   commitImport,
   type ImportRow,
 } from '@/services/importJobRows';
 import { toast } from 'sonner';
-import { ArrowLeft, CheckCircle2, AlertTriangle, FileSpreadsheet, CheckCheck, Pencil } from 'lucide-react';
+import {
+  ArrowLeft,
+  CheckCircle2,
+  AlertTriangle,
+  FileSpreadsheet,
+  CheckCheck,
+  Pencil,
+  Plus,
+  Trash2,
+} from 'lucide-react';
 import {
   Dialog,
   DialogContent,
@@ -46,6 +57,8 @@ const ExtratoJobPage = () => {
   const navigate = useNavigate();
   const queryClient = useQueryClient();
   const [editingRow, setEditingRow] = useState<ImportRow | null>(null);
+  const [isEditorOpen, setIsEditorOpen] = useState(false);
+  const [isCreateMode, setIsCreateMode] = useState(false);
   const [savingEdit, setSavingEdit] = useState(false);
   const [editForm, setEditForm] = useState<EditFormState>({
     date: '',
@@ -101,7 +114,9 @@ const ExtratoJobPage = () => {
 
   const openEditor = (row: ImportRow) => {
     if (row.isProcessed) return;
+    setIsCreateMode(false);
     setEditingRow(row);
+    setIsEditorOpen(true);
     setEditForm({
       date: toInputDate(row.review.date),
       description: row.review.description,
@@ -122,8 +137,32 @@ const ExtratoJobPage = () => {
 
   const closeEditor = () => {
     if (savingEdit) return;
+    setIsEditorOpen(false);
+    setIsCreateMode(false);
     setEditingRow(null);
   };
+
+  const openCreateEditor = () => {
+    setIsCreateMode(true);
+    setEditingRow(null);
+    setIsEditorOpen(true);
+    setEditForm({
+      date: '',
+      description: '',
+      merchant: '',
+      amount: '',
+      type: 'EXPENSE',
+      categoryId: '',
+      reviewStatus: 'PENDING',
+      notes: '',
+      selectedForImport: true,
+    });
+  };
+
+  const categoryOptions = useMemo(
+    () => (data?.categories ?? []).map((category) => ({ value: category.id, label: category.name })),
+    [data?.categories],
+  );
 
   if (!id) {
     return null;
@@ -137,15 +176,9 @@ const ExtratoJobPage = () => {
     );
   }
 
-  const { job, summary, rows, categories } = data;
-  const categoryOptions = useMemo(
-    () => categories.map((category) => ({ value: category.id, label: category.name })),
-    [categories],
-  );
+  const { job, summary, rows } = data;
 
   const saveRowEdit = async () => {
-    if (!editingRow) return;
-
     const amount = Number(editForm.amount.replace(',', '.'));
     if (!Number.isFinite(amount) || amount <= 0) {
       toast.error('Informe um valor maior que zero.');
@@ -158,24 +191,52 @@ const ExtratoJobPage = () => {
 
     setSavingEdit(true);
     try {
-      await updateImportRow(id, editingRow.id, {
-        date: editForm.date ? editForm.date : null,
-        description: editForm.description.trim(),
-        merchant: editForm.merchant.trim() ? editForm.merchant.trim() : null,
-        amount,
-        type: editForm.type,
-        categoryId: editForm.categoryId || null,
-        reviewStatus: editForm.reviewStatus,
-        notes: editForm.notes.trim() ? editForm.notes.trim() : null,
-        selectedForImport: editForm.selectedForImport,
-      });
-      toast.success('Linha atualizada com sucesso.');
-      setEditingRow(null);
+      if (isCreateMode) {
+        await createImportRow(id, {
+          date: editForm.date ? editForm.date : null,
+          description: editForm.description.trim(),
+          merchant: editForm.merchant.trim() ? editForm.merchant.trim() : null,
+          amount,
+          type: editForm.type,
+          categoryId: editForm.categoryId || null,
+          selectedForImport: editForm.selectedForImport,
+          notes: editForm.notes.trim() ? editForm.notes.trim() : null,
+        });
+        toast.success('Linha adicionada com sucesso.');
+      } else {
+        if (!editingRow) return;
+        await updateImportRow(id, editingRow.id, {
+          date: editForm.date ? editForm.date : null,
+          description: editForm.description.trim(),
+          merchant: editForm.merchant.trim() ? editForm.merchant.trim() : null,
+          amount,
+          type: editForm.type,
+          categoryId: editForm.categoryId || null,
+          reviewStatus: editForm.reviewStatus,
+          notes: editForm.notes.trim() ? editForm.notes.trim() : null,
+          selectedForImport: editForm.selectedForImport,
+        });
+        toast.success('Linha atualizada com sucesso.');
+      }
+      closeEditor();
       queryClient.invalidateQueries({ queryKey: ['import-job', id] });
     } catch (err) {
-      toast.error(err instanceof Error ? err.message : 'Erro ao salvar edição.');
+      toast.error(err instanceof Error ? err.message : 'Erro ao salvar linha.');
     } finally {
       setSavingEdit(false);
+    }
+  };
+
+  const handleDeleteRow = async (row: ImportRow) => {
+    if (row.isProcessed) return;
+    if (!confirm(`Excluir a linha #${row.rowNumber}?`)) return;
+
+    try {
+      await deleteImportRow(id, row.id);
+      toast.success('Linha excluída com sucesso.');
+      queryClient.invalidateQueries({ queryKey: ['import-job', id] });
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : 'Erro ao excluir linha.');
     }
   };
 
@@ -210,6 +271,15 @@ const ExtratoJobPage = () => {
           >
             <CheckCircle2 size={14} />
             Aprovar selecionadas
+          </button>
+          <button
+            type="button"
+            onClick={openCreateEditor}
+            disabled={commitMutation.isPending}
+            className="inline-flex items-center gap-2 rounded-xl border border-border bg-card px-3 py-2 text-xs font-medium text-muted-foreground hover:bg-accent transition-colors"
+          >
+            <Plus size={14} />
+            Adicionar linha
           </button>
           <button
             type="button"
@@ -325,15 +395,26 @@ const ExtratoJobPage = () => {
                     </span>
                   </td>
                   <td className="py-2.5 px-2">
-                    <button
-                      type="button"
-                      onClick={() => openEditor(row)}
-                      disabled={row.isProcessed}
-                      className="inline-flex items-center gap-1 rounded-md border border-border px-2 py-1 text-[11px] hover:bg-accent disabled:opacity-50"
-                    >
-                      <Pencil size={12} />
-                      Editar
-                    </button>
+                    <div className="flex items-center gap-1">
+                      <button
+                        type="button"
+                        onClick={() => openEditor(row)}
+                        disabled={row.isProcessed}
+                        className="inline-flex items-center gap-1 rounded-md border border-border px-2 py-1 text-[11px] hover:bg-accent disabled:opacity-50"
+                      >
+                        <Pencil size={12} />
+                        Editar
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => void handleDeleteRow(row)}
+                        disabled={row.isProcessed}
+                        className="inline-flex items-center gap-1 rounded-md border border-destructive/40 px-2 py-1 text-[11px] text-destructive hover:bg-destructive/10 disabled:opacity-50"
+                      >
+                        <Trash2 size={12} />
+                        Excluir
+                      </button>
+                    </div>
                   </td>
                 </tr>
               ))}
@@ -342,11 +423,11 @@ const ExtratoJobPage = () => {
         </div>
       </section>
 
-      <Dialog open={Boolean(editingRow)} onOpenChange={(open) => !open && closeEditor()}>
+      <Dialog open={isEditorOpen} onOpenChange={(open) => !open && closeEditor()}>
         <DialogContent>
           <DialogHeader>
             <DialogTitle>
-              Editar linha {editingRow?.rowNumber}
+              {isCreateMode ? 'Adicionar linha manual' : `Editar linha ${editingRow?.rowNumber}`}
             </DialogTitle>
           </DialogHeader>
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
@@ -420,7 +501,8 @@ const ExtratoJobPage = () => {
                 ))}
               </select>
             </label>
-            <label className="text-xs text-muted-foreground">
+            {!isCreateMode && (
+              <label className="text-xs text-muted-foreground">
               Status
               <select
                 value={editForm.reviewStatus}
@@ -436,7 +518,8 @@ const ExtratoJobPage = () => {
                 <option value="APPROVED">Aprovada</option>
                 <option value="REJECTED">Rejeitada</option>
               </select>
-            </label>
+              </label>
+            )}
             <label className="text-xs text-muted-foreground">
               Importar no commit
               <select
@@ -478,7 +561,7 @@ const ExtratoJobPage = () => {
               disabled={savingEdit}
               className="rounded-lg bg-primary px-3 py-2 text-xs font-semibold text-primary-foreground hover:bg-primary/90 disabled:opacity-60"
             >
-              {savingEdit ? 'Salvando...' : 'Salvar alterações'}
+              {savingEdit ? 'Salvando...' : isCreateMode ? 'Adicionar linha' : 'Salvar alterações'}
             </button>
           </DialogFooter>
         </DialogContent>

@@ -24,6 +24,7 @@ import {
 } from 'lucide-react';
 
 const ExtratosPage = () => {
+  const SHOW_BELVO_SECTION = false;
   const queryClient = useQueryClient();
   const navigate = useNavigate();
   const [uploading, setUploading] = useState(false);
@@ -123,7 +124,8 @@ const ExtratosPage = () => {
         </div>
       </header>
 
-      <section className="card-solid rounded-2xl p-4 sm:p-6 space-y-4 border border-primary/20">
+      {SHOW_BELVO_SECTION && (
+        <section className="card-solid rounded-2xl p-4 sm:p-6 space-y-4 border border-primary/20">
         <div className="flex flex-col sm:flex-row sm:items-start justify-between gap-4">
           <div className="flex gap-3">
             <div className="rounded-xl bg-primary/10 p-2.5 text-primary">
@@ -235,7 +237,8 @@ const ExtratosPage = () => {
             )}
           </div>
         )}
-      </section>
+        </section>
+      )}
 
       <section className="card-solid rounded-2xl p-4 sm:p-6 space-y-4">
         <div className="flex flex-col sm:flex-row justify-between sm:items-end gap-4">
