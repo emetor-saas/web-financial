@@ -2,10 +2,11 @@ import { useLocation, useNavigate, Link } from 'react-router-dom';
 import { useAuth } from '@/context/AuthContext';
 import {
   LayoutDashboard, Activity, ShieldCheck, CreditCard, Target,
-  BrainCircuit, User, Users, Settings, LogOut, Sparkles, FileText, Crown,
+  BrainCircuit, User, Users, Settings, LogOut, Sparkles, FileUp, Crown,
 } from 'lucide-react';
 import { Sheet, SheetContent } from '@/components/ui/sheet';
 import { cn } from '@/lib/utils';
+import { tenantCanUseChat } from '@/lib/billing';
 
 const NAV_ITEMS = [
   { label: 'Dashboard', path: '/app/dashboard', icon: LayoutDashboard, roles: ['SINGLE', 'COUPLE', 'ADMIN'] },
@@ -15,10 +16,11 @@ const NAV_ITEMS = [
   { label: 'Dívidas', path: '/app/dividas', icon: CreditCard, roles: ['SINGLE', 'COUPLE'] },
   { label: 'Metas', path: '/app/metas', icon: Target, roles: ['SINGLE', 'COUPLE'] },
   { label: 'Insights IA', path: '/app/insights', icon: BrainCircuit, roles: ['SINGLE', 'COUPLE'] },
-  { label: 'Espaço Casal', path: '/app/casal', icon: Users, roles: ['COUPLE'] },
+  { label: 'Importar extrato', path: '/app/extratos', icon: FileUp, roles: ['SINGLE', 'COUPLE', 'ADMIN'] },
+  { label: 'Espaço Casal', path: '/app/casal', icon: Users, roles: ['SINGLE', 'COUPLE'], requiresMultiTenant: true },
   { label: 'Admin Master', path: '/app/admin', icon: Settings, roles: ['ADMIN'] },
   { label: 'Perfil', path: '/app/perfil', icon: User, roles: ['SINGLE', 'COUPLE'] },
-];
+] as const;
 
 interface MobileNavProps {
   open: boolean;
@@ -31,6 +33,10 @@ export const MobileNav = ({ open, onOpenChange }: MobileNavProps) => {
   const navigate = useNavigate();
   const filteredItems = NAV_ITEMS.filter((item) => {
     if (!profileType || !item.roles.includes(profileType)) return false;
+    if ('requiresMultiTenant' in item && item.requiresMultiTenant) {
+      const n = user?.household?.tenantMemberCount;
+      if (n == null || n < 2) return false;
+    }
     if (item.path === '/app/chat' && !tenantCanUseChat(user)) return false;
     return true;
   });
@@ -52,7 +58,8 @@ export const MobileNav = ({ open, onOpenChange }: MobileNavProps) => {
 
         <nav className="flex-1 overflow-y-auto px-2 py-4 space-y-0.5">
           {filteredItems.map((item) => {
-            const isActive = location.pathname === item.path;
+            const isActive =
+              location.pathname === item.path || location.pathname.startsWith(`${item.path}/`);
             return (
               <Link
                 key={item.path}

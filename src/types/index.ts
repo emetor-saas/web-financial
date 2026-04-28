@@ -136,7 +136,8 @@ export interface CategorySpend {
 }
 
 export interface Alert {
-  id: number;
+  /** Pode ser numérico (dados legados de demo) ou string (ex.: cuid da API). */
+  id: string | number;
   title: string;
   description: string;
   type: 'info' | 'warning' | 'danger' | 'success';

@@ -1,0 +1,13 @@
+# Frontend sozinho (SPA). Na build, defina VITE_API_URL com a URL pública da API (sem barra final).
+# Porta exposta: 80
+
+services:
+  web:
+    build:
+      context: .
+      dockerfile: Dockerfile.coolify
+      args:
+        VITE_API_URL: ${VITE_API_URL}
+    restart: unless-stopped
+    ports:
+      - "80:80"

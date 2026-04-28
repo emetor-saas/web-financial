@@ -2,7 +2,7 @@ import { useLocation, useNavigate, Link } from 'react-router-dom';
 import { useAuth } from '@/context/AuthContext';
 import {
   LayoutDashboard, Activity, ShieldCheck, CreditCard, Target,
-  BrainCircuit, User, Users, Settings, LogOut,   ChevronLeft, ChevronRight, Sparkles, FileText, Crown
+  BrainCircuit, User, Users, Settings, LogOut, ChevronLeft, ChevronRight, Sparkles, FileUp, Crown,
 } from 'lucide-react';
 import { useState } from 'react';
 import { cn } from '@/lib/utils';
@@ -16,12 +16,12 @@ const NAV_ITEMS = [
   { label: 'Dívidas', path: '/app/dividas', icon: CreditCard, roles: ['SINGLE', 'COUPLE'] },
   { label: 'Metas', path: '/app/metas', icon: Target, roles: ['SINGLE', 'COUPLE'] },
   { label: 'Insights IA', path: '/app/insights', icon: BrainCircuit, roles: ['SINGLE', 'COUPLE'] },
-  { label: 'Extratos', path: '/app/extratos', icon: FileText, roles: ['SINGLE', 'COUPLE'] },
+  { label: 'Importar extrato', path: '/app/extratos', icon: FileUp, roles: ['SINGLE', 'COUPLE', 'ADMIN'] },
   { label: 'Planos', path: '/app/planos', icon: Crown, roles: ['SINGLE', 'COUPLE', 'ADMIN'] },
-  { label: 'Espaço Casal', path: '/app/casal', icon: Users, roles: ['COUPLE'] },
+  { label: 'Espaço Casal', path: '/app/casal', icon: Users, roles: ['SINGLE', 'COUPLE'], requiresMultiTenant: true },
   { label: 'Admin Master', path: '/app/admin', icon: Settings, roles: ['ADMIN'] },
   { label: 'Perfil', path: '/app/perfil', icon: User, roles: ['SINGLE', 'COUPLE'] },
-];
+] as const;
 
 export const AppSidebar = () => {
   const { profileType, logout, userName, user } = useAuth();
@@ -31,6 +31,10 @@ export const AppSidebar = () => {
 
   const filteredItems = NAV_ITEMS.filter((item) => {
     if (!profileType || !item.roles.includes(profileType)) return false;
+    if ('requiresMultiTenant' in item && item.requiresMultiTenant) {
+      const n = user?.household?.tenantMemberCount;
+      if (n == null || n < 2) return false;
+    }
     if (item.path === '/app/chat' && !tenantCanUseChat(user)) return false;
     return true;
   });
@@ -56,7 +60,8 @@ export const AppSidebar = () => {
       {/* Nav */}
       <nav className="flex-1 px-2 space-y-0.5 overflow-y-auto">
         {filteredItems.map((item) => {
-          const isActive = location.pathname === item.path;
+          const isActive =
+            location.pathname === item.path || location.pathname.startsWith(`${item.path}/`);
           return (
             <Link
               key={item.path}

@@ -22,6 +22,8 @@ export interface AuthUser {
     planCode: string | null;
     subscriptionStatus: string;
     isActive: boolean;
+    /** Quantidade de usuários do tenant no household (exclui MASTER). Para exibir “Espaço Casal”. */
+    tenantMemberCount?: number;
     /** Cartão/método da assinatura Stripe (bandeira + últimos 4), quando disponível */
     billingPaymentMethod?: {
       brand: string | null;

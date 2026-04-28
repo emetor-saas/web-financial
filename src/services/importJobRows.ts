@@ -50,6 +50,7 @@ export interface ImportJobDetail {
   };
   summary: ImportJobSummary;
   rows: ImportRow[];
+  categories: Array<{ id: string; name: string }>;
 }
 
 export async function fetchImportJobDetail(id: string): Promise<ImportJobDetail> {
