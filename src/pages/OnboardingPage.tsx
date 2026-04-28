@@ -101,7 +101,7 @@ const OnboardingPage = () => {
         <div className="flex items-center justify-between gap-4">
           <div>
             <p className="text-xs font-semibold uppercase tracking-widest text-primary">
-              Diagnóstico AURA
+              Diagnóstico Clareza
             </p>
             <h1 className="font-display text-2xl sm:text-3xl font-bold mt-1">
               Vamos entender sua casa financeira

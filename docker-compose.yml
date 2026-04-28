@@ -10,4 +10,4 @@ services:
         VITE_API_URL: ${VITE_API_URL}
     restart: unless-stopped
     ports:
-      - "80:80"
+      - "${WEB_PORT:-8089}:80"

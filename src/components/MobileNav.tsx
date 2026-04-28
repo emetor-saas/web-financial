@@ -53,7 +53,7 @@ export const MobileNav = ({ open, onOpenChange }: MobileNavProps) => {
           <div className="w-10 h-10 bg-primary rounded-xl flex items-center justify-center flex-shrink-0 shadow-glow-primary">
             <BrainCircuit size={20} className="text-primary-foreground" />
           </div>
-          <span className="font-display font-bold text-lg text-foreground tracking-tight">AURA</span>
+          <span className="font-display font-bold text-lg text-foreground tracking-tight">Clareza</span>
         </div>
 
         <nav className="flex-1 overflow-y-auto px-2 py-4 space-y-0.5">

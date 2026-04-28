@@ -23,7 +23,7 @@ const anim = (i: number) => ({
   transition: { delay: i * 0.04, duration: 0.25 },
 });
 
-/** Pilares AURA: 0–25 cada → exibimos em 0–100 no mapa (×4) para alinhar à legenda */
+/** Pilares Clareza: 0–25 cada → exibimos em 0–100 no mapa (×4) para alinhar à legenda */
 const PILLAR_KEYS = [
   { key: 'control', short: 'CONTROLE', label: 'Controle do mês' },
   { key: 'resilience', short: 'RESILIÊNCIA', label: 'Resiliência' },
@@ -118,13 +118,13 @@ const DiagnosticoPage = () => {
       <motion.div {...anim(0)} className="text-center space-y-3">
         <h1 className="font-display text-3xl font-black tracking-tight">Diagnóstico de Saúde Financeira</h1>
         <p className="text-muted-foreground max-w-xl mx-auto text-sm">
-          Sua saúde financeira é medida pelos quatro pilares do AURA (0–100 cada no mapa). O equilíbrio entre eles define sua resiliência.
+          Sua saúde financeira é medida pelos quatro pilares da Clareza (0–100 cada no mapa). O equilíbrio entre eles define sua resiliência.
         </p>
       </motion.div>
 
       {/* Score resumo compacto */}
       <motion.div {...anim(1)} className="card-solid rounded-2xl p-6 text-center">
-        <span className="text-xs font-bold text-muted-foreground uppercase tracking-widest">AURA Score geral</span>
+        <span className="text-xs font-bold text-muted-foreground uppercase tracking-widest">Score Clareza geral</span>
         <p className={`text-5xl sm:text-6xl font-display font-black tabular-nums mt-1 ${getScoreColor(auraScore)}`}>
           {Math.round(auraScore)}
         </p>
@@ -134,7 +134,7 @@ const DiagnosticoPage = () => {
         {usedOnboarding && (
           <p className="text-[11px] text-amber-400 mt-2 max-w-lg mx-auto">
             Este diagnóstico inicial está baseado principalmente nas respostas do onboarding. Conforme você importar extratos e
-            registrar movimentos reais, o AURA Score será refinado automaticamente.
+            registrar movimentos reais, o score Clareza será refinado automaticamente.
           </p>
         )}
         {isEstimated && !usedOnboarding && (
@@ -150,7 +150,7 @@ const DiagnosticoPage = () => {
         className="bg-card rounded-2xl border border-border/80 shadow-lg shadow-black/5 p-6 sm:p-8"
       >
         <h2 className="text-center font-display text-lg sm:text-xl font-bold tracking-wide text-primary mb-6">
-          MAPA DE DESEMPENHO AURA
+          MAPA DE DESEMPENHO CLAREZA
         </h2>
 
         {/* Legenda em 2 colunas */}
@@ -233,7 +233,7 @@ const DiagnosticoPage = () => {
         </div>
 
         <p className="text-center text-[11px] text-muted-foreground mt-4 max-w-md mx-auto">
-          Indicadores em escala 0–100 (cada pilar AURA original 0–25 foi convertido para 0–100). A tendência compara cada pilar à
+          Indicadores em escala 0–100 (cada pilar Clareza original 0–25 foi convertido para 0–100). A tendência compara cada pilar à
           média dos quatro pilares.
         </p>
       </motion.div>
@@ -270,7 +270,7 @@ const DiagnosticoPage = () => {
       <motion.div {...anim(4)} className="card-solid rounded-2xl p-6 hover:border-border transition-all duration-200">
         <h3 className="font-display font-semibold mb-2">Evolução do score geral</h3>
         <p className="text-xs text-muted-foreground mb-4">
-          A linha do mês atual reflete o AURA Score atual; demais pontos são ilustrativos até termos histórico mensal.
+          A linha do mês atual reflete o score Clareza atual; demais pontos são ilustrativos até termos histórico mensal.
         </p>
         <div className="h-[200px]">
           <ResponsiveContainer width="100%" height="100%">

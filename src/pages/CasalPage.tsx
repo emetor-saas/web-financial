@@ -164,7 +164,7 @@ const CasalPage = () => {
           <div className="w-12 h-12 bg-primary/20 rounded-full flex items-center justify-center mx-auto mb-3">
             <Users size={20} className="text-primary" />
           </div>
-          <h3 className="font-display font-semibold">AURA — família</h3>
+          <h3 className="font-display font-semibold">Clareza — família</h3>
           <p className={`text-3xl font-display font-black tabular-nums mt-1 ${getScoreColor(couple.jointAuraScore)}`}>
             {couple.jointAuraScore}
           </p>

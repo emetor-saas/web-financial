@@ -50,7 +50,7 @@ export const AppSidebar = () => {
           <div className="w-9 h-9 bg-primary rounded-xl flex items-center justify-center flex-shrink-0 shadow-glow-primary">
             <BrainCircuit size={18} className="text-primary-foreground" />
           </div>
-          {!collapsed && <span className="font-display font-bold text-lg text-foreground tracking-tight">AURA</span>}
+          {!collapsed && <span className="font-display font-bold text-lg text-foreground tracking-tight">Clareza</span>}
         </Link>
         <button onClick={() => setCollapsed(!collapsed)} className="p-1.5 text-muted-foreground hover:text-foreground hover:bg-accent rounded-lg transition-all duration-200">
           {collapsed ? <ChevronRight size={16} /> : <ChevronLeft size={16} />}

@@ -65,7 +65,7 @@ const DashboardPage = () => {
       {/* KPIs */}
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">
         <motion.div {...anim(0)} className="card-solid rounded-2xl p-4 sm:p-6 flex flex-col items-center justify-center hover:border-border transition-all duration-200">
-          <span className="text-xs font-bold text-muted-foreground uppercase tracking-wider mb-2">Health Score</span>
+          <span className="text-xs font-bold text-muted-foreground uppercase tracking-wider mb-2">Score Clareza</span>
           <span className={`text-4xl sm:text-5xl font-display font-black font-mono-nums ${getScoreColor(auraScore)}`}>
             {Math.round(auraScore)}
           </span>

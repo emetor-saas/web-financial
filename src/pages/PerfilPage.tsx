@@ -143,7 +143,7 @@ const PerfilPage = () => {
           <p className="text-xs text-muted-foreground mt-0.5">{planLabel}</p>
           <div className="flex flex-wrap items-center gap-x-4 gap-y-1 mt-2 text-sm">
             <span>
-              Score:{' '}
+              Score Clareza:{' '}
               <strong className="text-primary tabular-nums">
                 {score != null ? score : '—'}
               </strong>

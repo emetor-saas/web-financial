@@ -78,7 +78,7 @@ export default function ChatPage() {
         <h1 className="font-display text-xl font-semibold tracking-tight">Chat IA para assinantes</h1>
         <p className="text-sm text-muted-foreground">
           O assistente com IA está disponível apenas para planos pagos. Você ainda pode usar o app no período
-          de teste de 1 hora; para conversar com a AURA, assine um plano.
+          de teste de 1 hora; para conversar com a Clareza, assine um plano.
         </p>
         <Link
           to="/app/planos"
@@ -100,7 +100,7 @@ export default function ChatPage() {
           </div>
           <div>
             <h1 className="font-display font-semibold text-foreground tracking-tight">
-              Assistente AURA
+              Assistente Clareza
             </h1>
             <p className="text-xs text-muted-foreground">
               Dúvidas sobre finanças, metas e diagnóstico
@@ -192,7 +192,7 @@ export default function ChatPage() {
             value={input}
             onChange={(e) => setInput(e.target.value)}
             onKeyDown={handleKeyDown}
-            placeholder="Mensagem para a AURA..."
+            placeholder="Mensagem para a Clareza..."
             rows={1}
             className="flex-1 min-h-[44px] max-h-32 resize-none bg-transparent px-3 py-2.5 text-sm text-foreground placeholder:text-muted-foreground outline-none"
           />
@@ -212,7 +212,7 @@ export default function ChatPage() {
           </button>
         </div>
         <p className="text-[10px] text-muted-foreground/80 mt-2 text-center">
-          A AURA pode cometer erros. Use as informações apenas como apoio à decisão.
+          A Clareza pode cometer erros. Use as informações apenas como apoio à decisão.
         </p>
       </div>
     </div>
