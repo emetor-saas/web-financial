@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { useNavigate } from 'react-router-dom';
-import { uploadImportFile, listImportJobs } from '@/services/importJobs';
+import { uploadImportFile, listImportJobs, ImportUploadError } from '@/services/importJobs';
 import {
   fetchBelvoStatus,
   listBelvoConnections,
@@ -57,6 +57,18 @@ const ExtratosPage = () => {
       toast.success('Upload recebido. O processamento será iniciado em instantes.');
       await queryClient.invalidateQueries({ queryKey: ['import-jobs'] });
     } catch (error) {
+      if (error instanceof ImportUploadError) {
+        const details =
+          error.details && typeof error.details === 'object'
+            ? (error.details as Record<string, unknown>)
+            : null;
+        const isTrialExpired = error.status === 402 || details?.code === 'trial_expired';
+        if (isTrialExpired) {
+          toast.error('Seu período de teste acabou. Assine um plano para continuar importando extratos.');
+          navigate('/app/planos');
+          return;
+        }
+      }
       const message =
         error instanceof Error ? error.message : 'Erro ao enviar arquivo. Tente novamente.';
       toast.error(message);

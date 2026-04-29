@@ -3,6 +3,7 @@ import { CheckCircle2, Circle, Clock, Zap, ArrowUp } from 'lucide-react';
 import { useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { apiFetch } from '@/lib/apiClient';
+import { buildClientNarrative } from '@/lib/clientNarrative';
 
 const anim = (i: number) => ({ initial: { opacity: 0, y: 15 }, animate: { opacity: 1, y: 0 }, transition: { delay: i * 0.05 } });
 
@@ -35,6 +36,7 @@ const PlanoDeAcaoPage = () => {
         title,
       })),
     ] as { id: string; bucket: string; title: string }[];
+  const narrative = buildClientNarrative(data ?? {}, 'plano');
 
   const [completedIds, setCompletedIds] = useState<Set<string>>(new Set());
   const [filter, setFilter] = useState<'all' | 'today' | '7d' | '30d' | '90d'>('all');
@@ -71,8 +73,15 @@ const PlanoDeAcaoPage = () => {
         <p className="text-muted-foreground text-sm mt-1">Ações priorizadas para melhorar sua saúde financeira.</p>
       </motion.div>
 
+      <motion.div {...anim(1)} className="card-solid rounded-2xl p-5 space-y-2">
+        <h3 className="font-display font-semibold">{narrative.stageTitle}</h3>
+        <p className="text-sm text-muted-foreground"><strong>Contexto:</strong> {narrative.context}.</p>
+        <p className="text-sm text-muted-foreground"><strong>Foco agora:</strong> {narrative.focus}.</p>
+        <p className="text-sm text-muted-foreground"><strong>Próximo passo:</strong> {narrative.nextStep}.</p>
+      </motion.div>
+
       {/* Progress */}
-      <motion.div {...anim(1)} className="bg-card border border-border rounded-xl p-6 shadow-premium">
+      <motion.div {...anim(2)} className="bg-card border border-border rounded-xl p-6 shadow-premium">
         <div className="flex items-center justify-between mb-3">
           <span className="font-display font-semibold">Progresso Geral</span>
           <span className="text-2xl font-display font-bold text-primary tabular-nums">{progress}%</span>
@@ -116,7 +125,7 @@ const PlanoDeAcaoPage = () => {
         {filtered.map((action, i) => (
           <motion.div
             key={action.id}
-            {...anim(2 + i)}
+            {...anim(3 + i)}
             className={`bg-card border rounded-xl p-5 transition-all duration-200 hover:-translate-y-0.5 ${
               completedIds.has(action.id) ? 'border-border/50 opacity-60' : 'border-border'
             }`}

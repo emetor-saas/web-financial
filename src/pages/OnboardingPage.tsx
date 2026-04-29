@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import { useNavigate, Navigate } from 'react-router-dom';
+import { useQueryClient } from '@tanstack/react-query';
 import { useAuth } from '@/context/AuthContext';
 import { motion } from 'framer-motion';
 import { ArrowRight, ArrowLeft, CheckCircle2 } from 'lucide-react';
@@ -36,6 +37,7 @@ const anim = (i: number) => ({
 const OnboardingPage = () => {
   const { isAuthenticated } = useAuth();
   const navigate = useNavigate();
+  const queryClient = useQueryClient();
   const [step, setStep] = useState<number>(1);
   const [submitting, setSubmitting] = useState(false);
   const [answers, setAnswers] = useState<Answers>({
@@ -75,8 +77,12 @@ const OnboardingPage = () => {
         method: 'POST',
         body: JSON.stringify(answers),
       });
-      toast.success('Diagnóstico inicial registrado. Agora vamos para a leitura detalhada.');
-      navigate('/app/diagnostico', { replace: true });
+      queryClient.setQueryData(['onboarding-status'], {
+        hasOnboarding: true,
+        updatedAt: new Date().toISOString(),
+      });
+      toast.success('Diagnóstico inicial concluído. Vamos preparar sua experiência personalizada.');
+      navigate('/app/preparando', { replace: true });
     } catch (error) {
       toast.error(
         error instanceof Error

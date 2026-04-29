@@ -84,13 +84,6 @@ export interface RegisterResponse {
     userId: string;
     email: string;
   };
-  emailVerification: {
-    sent: boolean;
-    skipped: boolean;
-    warning: string | null;
-    expiresAt: string;
-    verifyUrl?: string;
-  };
 }
 
 export async function registerAccount(

@@ -18,7 +18,7 @@ const RegisterPage = () => {
     if (!name || !householdName || !email || !password || loading) return;
     setLoading(true);
     try {
-      const res = await registerAccount({
+      await registerAccount({
         name,
         householdName,
         email,
@@ -26,16 +26,7 @@ const RegisterPage = () => {
         language: 'pt-BR',
       });
 
-      if (res.emailVerification.verifyUrl) {
-        toast.message('Conta criada', {
-          description:
-            'Como o email não está configurado neste ambiente, copie o link de verificação exibido a seguir.',
-        });
-        console.info('Link de verificação:', res.emailVerification.verifyUrl);
-      } else {
-        toast.success('Conta criada! Verifique seu email para confirmar o cadastro.');
-      }
-
+      toast.success('Conta criada com sucesso.');
       navigate('/login', { replace: true });
     } catch (err) {
       const message =

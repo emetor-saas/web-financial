@@ -14,6 +14,7 @@ export interface DashboardStats {
     icon: string | null;
     total: number;
   }[];
+  estimatedFromDiagnostic?: boolean;
 }
 
 export async function fetchDashboardStats(): Promise<DashboardStats> {

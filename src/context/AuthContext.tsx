@@ -46,6 +46,30 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       .finally(() => setLoaded(true));
   }, []);
 
+  useEffect(() => {
+    if (!isAuthenticated) return;
+
+    const intervalId = window.setInterval(() => {
+      fetchMe()
+        .then((me) => {
+          if (me) {
+            setUser(me);
+            setIsAuthenticated(true);
+            setProfileType(mapRoleToProfileType(me.role));
+            return;
+          }
+          setUser(null);
+          setIsAuthenticated(false);
+          setProfileType(null);
+        })
+        .catch(() => {
+          // silent: evita ruído de erro global em refresh periódico
+        });
+    }, 60_000);
+
+    return () => window.clearInterval(intervalId);
+  }, [isAuthenticated]);
+
   const loginWithCredentials = async (email: string, password: string) => {
     const loggedUser = await apiLogin(email, password);
     setUser(loggedUser);

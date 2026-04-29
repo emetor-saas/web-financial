@@ -7,6 +7,7 @@ import { Link } from 'react-router-dom';
 import { useQuery } from '@tanstack/react-query';
 import { fetchDashboardStats } from '@/services/dashboard';
 import { apiFetch } from '@/lib/apiClient';
+import { buildClientNarrative } from '@/lib/clientNarrative';
 
 const anim = (i: number) => ({
   initial: { opacity: 0, y: 12 },
@@ -21,6 +22,12 @@ type DiagnosticPayload = {
   };
   mainRisks: string[];
   mainPriorities: string[];
+  summaryExecutive?: string[];
+  onboardingAnswers?: {
+    saldoMensal?: 'azul' | 'vermelho' | '';
+    objetivosCurto?: string;
+    objetivosLongo?: string;
+  } | null;
 };
 
 const DashboardPage = () => {
@@ -37,8 +44,10 @@ const DashboardPage = () => {
   const totalIncome = stats?.totalIncome ?? 0;
   const totalExpenses = stats?.totalExpenses ?? 0;
   const balance = stats?.balance ?? 0;
+  const estimatedFromDiagnostic = stats?.estimatedFromDiagnostic === true;
 
   const auraScore = diagnostic?.auraScore?.score ?? 0;
+  const narrative = buildClientNarrative(diagnostic ?? {}, 'dashboard');
 
   return (
     <div className="p-4 sm:p-6 lg:p-8 space-y-6 sm:space-y-8 max-w-7xl mx-auto">
@@ -46,7 +55,7 @@ const DashboardPage = () => {
         <div>
           <h1 className="font-display text-2xl lg:text-3xl font-black tracking-tight">Dashboard</h1>
           <p className="text-muted-foreground text-sm mt-0.5">
-            Bem-vindo, {user?.name ?? 'Cliente'}. Aqui está seu resumo financeiro em tempo real.
+            Bem-vindo, {user?.name ?? 'Cliente'}. Aqui esta seu resumo financeiro conectado ao seu diagnostico inicial.
           </p>
         </div>
         <div className="card-solid px-4 py-2.5 rounded-xl flex items-center gap-3">
@@ -62,7 +71,20 @@ const DashboardPage = () => {
         </div>
       </header>
 
+      <motion.div {...anim(0)} className="card-solid rounded-2xl p-5 space-y-2">
+        <h3 className="font-display font-semibold">{narrative.stageTitle}</h3>
+        <p className="text-sm text-muted-foreground"><strong>Contexto:</strong> {narrative.context}.</p>
+        <p className="text-sm text-muted-foreground"><strong>Foco agora:</strong> {narrative.focus}.</p>
+        <p className="text-sm text-muted-foreground"><strong>Próximo passo:</strong> {narrative.nextStep}.</p>
+      </motion.div>
+
       {/* KPIs */}
+      {estimatedFromDiagnostic && (
+        <motion.div {...anim(0)} className="rounded-xl border border-amber-500/40 bg-amber-500/10 px-4 py-3 text-sm text-amber-900 dark:text-amber-100">
+          <strong>Dados estimados do diagnóstico inicial:</strong> renda, gastos e sobra estão vindo do onboarding até você importar extratos
+          ou registrar movimentações reais.
+        </motion.div>
+      )}
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">
         <motion.div {...anim(0)} className="card-solid rounded-2xl p-4 sm:p-6 flex flex-col items-center justify-center hover:border-border transition-all duration-200">
           <span className="text-xs font-bold text-muted-foreground uppercase tracking-wider mb-2">Score Clareza</span>

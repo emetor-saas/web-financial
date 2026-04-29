@@ -14,6 +14,8 @@ const DividasPage = () => {
   });
 
   const list: DebtSummary[] = debts ?? [];
+  const hasEstimatedDebt = list.some((d) => d.estimatedFromOnboarding);
+  const estimatedNote = list.find((d) => d.estimatedFromOnboarding)?.sourceNote;
 
   const totalDebt = list.reduce((s, d) => s + d.balance, 0);
   const totalMonthly = list.reduce((s, d) => s + d.monthlyPayment, 0);
@@ -27,6 +29,14 @@ const DividasPage = () => {
         <h1 className="font-display text-2xl lg:text-3xl font-bold">Mapa de Dívidas</h1>
         <p className="text-muted-foreground text-sm mt-1">Análise detalhada e estratégia de quitação.</p>
       </motion.div>
+
+      {hasEstimatedDebt && (
+        <motion.div {...anim(0)} className="rounded-xl border border-amber-500/40 bg-amber-500/10 px-4 py-3 text-sm text-amber-900 dark:text-amber-100">
+          <strong>Estimativa do diagnóstico inicial:</strong>{' '}
+          {estimatedNote ||
+            'As dívidas mostradas vieram do texto informado no onboarding e podem não refletir os valores finais. Cadastre as dívidas no módulo para análises precisas.'}
+        </motion.div>
+      )}
 
       {/* KPIs */}
       <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
@@ -85,7 +95,7 @@ const DividasPage = () => {
             </div>
             <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 text-sm">
               <div><span className="text-muted-foreground text-xs">Parcela</span><p className="font-semibold tabular-nums">{formatCurrency(d.monthlyPayment)}</p></div>
-              <div><span className="text-muted-foreground text-xs">Juros</span><p className="font-semibold tabular-nums">{d.interestRate}% a.m.</p></div>
+              <div><span className="text-muted-foreground text-xs">Juros</span><p className="font-semibold tabular-nums">{d.interestRate != null ? `${d.interestRate}% a.m.` : '—'}</p></div>
               <div><span className="text-muted-foreground text-xs">Impacto Mensal</span><p className="font-semibold tabular-nums">{formatCurrency(d.monthlyImpact)}</p></div>
               <div><span className="text-muted-foreground text-xs">Economia se Quitar</span><p className="font-semibold text-success tabular-nums">{formatCurrency(d.potentialSaving)}</p></div>
             </div>

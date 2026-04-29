@@ -10,6 +10,8 @@ export interface DebtSummary {
   monthlyImpact: number;
   potentialSaving: number;
   attackOrder: number;
+  estimatedFromOnboarding?: boolean;
+  sourceNote?: string;
 }
 
 export async function fetchDebts(): Promise<DebtSummary[]> {

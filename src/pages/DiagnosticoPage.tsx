@@ -16,6 +16,7 @@ import {
 import { getScoreColor, getScoreLabel } from '@/utils/formatters';
 import { useQuery } from '@tanstack/react-query';
 import { apiFetch } from '@/lib/apiClient';
+import { buildClientNarrative } from '@/lib/clientNarrative';
 
 const anim = (i: number) => ({
   initial: { opacity: 0, y: 12 },
@@ -113,6 +114,8 @@ const DiagnosticoPage = () => {
     },
   ];
 
+  const narrative = buildClientNarrative(data ?? {}, 'diagnostico');
+
   return (
     <div className="p-4 sm:p-6 lg:p-8 space-y-6 sm:space-y-8 max-w-5xl mx-auto">
       <motion.div {...anim(0)} className="text-center space-y-3">
@@ -144,9 +147,16 @@ const DiagnosticoPage = () => {
         )}
       </motion.div>
 
+      <motion.div {...anim(2)} className="card-solid rounded-2xl p-6 space-y-2">
+        <h3 className="font-display font-semibold">{narrative.stageTitle}</h3>
+        <p className="text-sm text-muted-foreground"><strong>Contexto:</strong> {narrative.context}.</p>
+        <p className="text-sm text-muted-foreground"><strong>Foco agora:</strong> {narrative.focus}.</p>
+        <p className="text-sm text-muted-foreground"><strong>Próximo passo:</strong> {narrative.nextStep}.</p>
+      </motion.div>
+
       {/* MAPA DE DESEMPENHO — estilo referência */}
       <motion.div
-        {...anim(2)}
+        {...anim(3)}
         className="bg-card rounded-2xl border border-border/80 shadow-lg shadow-black/5 p-6 sm:p-8"
       >
         <h2 className="text-center font-display text-lg sm:text-xl font-bold tracking-wide text-primary mb-6">

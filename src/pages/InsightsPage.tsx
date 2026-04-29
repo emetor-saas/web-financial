@@ -4,6 +4,8 @@ import { getSeverityColor } from '@/utils/formatters';
 import { useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { fetchAlerts } from '@/services/alerts';
+import { apiFetch } from '@/lib/apiClient';
+import { buildClientNarrative } from '@/lib/clientNarrative';
 
 const anim = (i: number) => ({ initial: { opacity: 0, y: 12 }, animate: { opacity: 1, y: 0 }, transition: { delay: i * 0.04, duration: 0.25 } });
 
@@ -34,8 +36,12 @@ const InsightsPage = () => {
     queryKey: ['alerts'],
     queryFn: fetchAlerts,
   });
+  const { data: diagnostic } = useQuery({
+    queryKey: ['diagnostic-current-insights'],
+    queryFn: () => apiFetch<any>('/api/diagnostic/current'),
+  });
 
-  const insights =
+  const apiInsights =
     data?.alerts.map((a) => ({
       id: a.id,
       title: a.title,
@@ -50,6 +56,23 @@ const InsightsPage = () => {
           ? 'Ajuste limites de gastos e defina um plano simples para as próximas semanas.'
           : 'Planeje, com calma, como quer reposicionar sua casa financeira nos próximos meses.',
     })) ?? [];
+  const onboarding = diagnostic?.onboardingAnswers as Record<string, unknown> | null;
+  const fallbackInsights =
+    (diagnostic?.mainPriorities ?? []).map((title: string, idx: number) => ({
+      id: `diag-${idx}`,
+      title,
+      text: diagnostic?.summaryExecutive?.[Math.min(idx, 2)] ?? 'Recomendacao gerada pelo seu diagnostico atual.',
+      severity: idx === 0 ? 'high' : idx === 1 ? 'medium' : 'low',
+      category: 'behavior',
+      impact: idx === 0 ? 'Alto' : 'Médio',
+      timeframe: idx === 0 ? '7d' : idx === 1 ? '15d' : '30d',
+      action:
+        diagnostic?.actionPlan?.today?.[idx] ||
+        diagnostic?.actionPlan?.next7Days?.[idx] ||
+        'Transforme esta recomendacao em uma acao objetiva ainda esta semana.',
+    })) ?? [];
+  const insights = apiInsights.length > 0 ? apiInsights : fallbackInsights;
+  const narrative = buildClientNarrative(diagnostic ?? {}, 'insights');
   const [activeFilter, setActiveFilter] = useState<string>('all');
 
   const filtered = activeFilter === 'all' ? insights : insights.filter(i => i.category === activeFilter);
@@ -65,6 +88,13 @@ const InsightsPage = () => {
           <h1 className="font-display text-2xl lg:text-3xl font-black tracking-tight">Central de Insights</h1>
           <p className="text-muted-foreground text-sm mt-0.5">Análises e recomendações geradas por inteligência artificial.</p>
         </div>
+      </motion.div>
+
+      <motion.div {...anim(0)} className="card-solid rounded-2xl p-5 space-y-2">
+        <h3 className="font-display font-semibold">{narrative.stageTitle}</h3>
+        <p className="text-sm text-muted-foreground"><strong>Contexto:</strong> {narrative.context}.</p>
+        <p className="text-sm text-muted-foreground"><strong>Foco agora:</strong> {narrative.focus}.</p>
+        <p className="text-sm text-muted-foreground"><strong>Próximo passo:</strong> {narrative.nextStep}.</p>
       </motion.div>
 
       {/* Filters */}

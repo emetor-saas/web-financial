@@ -22,6 +22,7 @@ import ChatPage from "@/pages/ChatPage";
 import ExtratosPage from "@/pages/ExtratosPage";
 import ExtratoJobPage from "@/pages/ExtratoJobPage";
 import PlansPage from "@/pages/PlansPage";
+import PreparandoExperienciaPage from "@/pages/PreparandoExperienciaPage";
 import NotFound from "@/pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -52,6 +53,7 @@ const App = () => (
               <Route path="casal" element={<CasalPage />} />
               <Route path="admin" element={<AdminPage />} />
               <Route path="chat" element={<ChatPage />} />
+              <Route path="preparando" element={<PreparandoExperienciaPage />} />
             </Route>
             <Route path="/" element={<Navigate to="/login" replace />} />
             <Route path="*" element={<NotFound />} />

@@ -2,11 +2,12 @@ import { useLocation, useNavigate, Link } from 'react-router-dom';
 import { useAuth } from '@/context/AuthContext';
 import {
   LayoutDashboard, Activity, ShieldCheck, CreditCard, Target,
-  BrainCircuit, User, Users, Settings, LogOut, ChevronLeft, ChevronRight, Sparkles, FileUp, Crown,
+  BrainCircuit, User, Users, Settings, LogOut, ChevronLeft, ChevronRight, Sparkles, FileUp, Crown, Lock,
 } from 'lucide-react';
 import { useState } from 'react';
 import { cn } from '@/lib/utils';
 import { tenantCanUseChat } from '@/lib/billing';
+import { toast } from 'sonner';
 
 const NAV_ITEMS = [
   { label: 'Dashboard', path: '/app/dashboard', icon: LayoutDashboard, roles: ['SINGLE', 'COUPLE', 'ADMIN'] },
@@ -35,9 +36,9 @@ export const AppSidebar = () => {
       const n = user?.household?.tenantMemberCount;
       if (n == null || n < 2) return false;
     }
-    if (item.path === '/app/chat' && !tenantCanUseChat(user)) return false;
     return true;
   });
+  const chatLocked = !tenantCanUseChat(user);
 
   return (
     <aside className={cn(
@@ -62,6 +63,31 @@ export const AppSidebar = () => {
         {filteredItems.map((item) => {
           const isActive =
             location.pathname === item.path || location.pathname.startsWith(`${item.path}/`);
+          const isLockedChat = item.path === '/app/chat' && chatLocked;
+          if (isLockedChat) {
+            return (
+              <button
+                key={item.path}
+                type="button"
+                onClick={() => {
+                  toast.message('Chat IA disponível no plano pago.', {
+                    description: 'Contrate um plano para liberar o aconselhamento com IA.',
+                  });
+                  navigate('/app/planos');
+                }}
+                className="w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium transition-all duration-200 text-muted-foreground hover:bg-accent border border-dashed border-border/70"
+              >
+                <item.icon size={18} className="flex-shrink-0" />
+                {!collapsed && <span>{item.label}</span>}
+                {!collapsed && (
+                  <span className="ml-auto inline-flex items-center gap-1 text-[10px] uppercase tracking-wider text-amber-400">
+                    <Lock size={12} />
+                    Bloqueado
+                  </span>
+                )}
+              </button>
+            );
+          }
           return (
             <Link
               key={item.path}
