@@ -8,6 +8,7 @@ import type { Alert } from '@/types';
 import { NotificationsPanel } from '@/components/NotificationsPanel';
 import { ThemeSwitcher } from '@/components/ThemeSwitcher';
 import { fetchInAppAlerts } from '@/services/notifications';
+import { useIsMobile } from '@/hooks/use-mobile';
 
 /** Reativar quando existir pesquisa global ligada à API. */
 const SHOW_TOPBAR_SEARCH = false;
@@ -20,6 +21,7 @@ interface TopbarProps {
 export const Topbar = ({ showMenuButton, onMenuClick }: TopbarProps) => {
   const { logout, userName, isAuthenticated, user } = useAuth();
   const navigate = useNavigate();
+  const isMobile = useIsMobile();
   const [showProfileMenu, setShowProfileMenu] = useState(false);
   const [showNotifications, setShowNotifications] = useState(false);
 
@@ -102,10 +104,18 @@ export const Topbar = ({ showMenuButton, onMenuClick }: TopbarProps) => {
                 onClick={() => setShowNotifications(false)}
                 aria-hidden
               />
-              <div className="absolute right-0 top-full mt-2 z-50">
+              <div
+                className={cn(
+                  'z-50',
+                  isMobile
+                    ? 'fixed left-2 right-2 top-[68px]'
+                    : 'absolute right-0 top-full mt-2'
+                )}
+              >
                 <NotificationsPanel
                   notifications={notifications}
                   onClose={() => setShowNotifications(false)}
+                  className={isMobile ? 'w-full max-h-[65vh]' : undefined}
                 />
               </div>
             </>
