@@ -1,7 +1,7 @@
 import { useAuth } from '@/context/AuthContext';
 import { motion } from 'framer-motion';
 import { ArrowUpRight, ArrowDownRight, Zap, BrainCircuit, AlertTriangle, Target, CreditCard } from 'lucide-react';
-import { AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, PieChart, Pie, Cell } from 'recharts';
+import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, PieChart, Pie, Cell } from 'recharts';
 import { formatCurrency, getScoreColor, getScoreLabel } from '@/utils/formatters';
 import { Link } from 'react-router-dom';
 import { useQuery } from '@tanstack/react-query';
@@ -104,28 +104,33 @@ const DashboardPage = () => {
           <h3 className="font-display font-semibold tracking-tight mb-6">Fluxo de Caixa</h3>
           <div className="h-[220px] sm:h-[260px] lg:h-[280px]">
             <ResponsiveContainer width="100%" height="100%">
-              <AreaChart
+              <BarChart
                 data={[
                   {
-                    label: 'Mês atual',
-                    income: totalIncome,
-                    expenses: totalExpenses,
+                    label: 'Receitas',
+                    total: totalIncome,
+                    color: 'hsl(145, 55%, 58%)',
+                  },
+                  {
+                    label: 'Gastos',
+                    total: totalExpenses,
+                    color: 'hsl(0, 70%, 55%)',
                   },
                 ]}
               >
-                <defs>
-                  <linearGradient id="incGrad" x1="0" y1="0" x2="0" y2="1">
-                    <stop offset="5%" stopColor="hsl(145, 55%, 58%)" stopOpacity={0.3} />
-                    <stop offset="95%" stopColor="hsl(145, 55%, 58%)" stopOpacity={0} />
-                  </linearGradient>
-                </defs>
                 <CartesianGrid strokeDasharray="3 3" stroke="hsl(0, 0%, 18%)" vertical={false} />
                 <XAxis dataKey="label" stroke="hsl(0, 0%, 55%)" fontSize={12} tickLine={false} axisLine={false} />
                 <YAxis stroke="hsl(0, 0%, 55%)" fontSize={12} tickLine={false} axisLine={false} />
                 <Tooltip contentStyle={{ backgroundColor: 'hsl(0, 0%, 9%)', border: '1px solid hsl(0, 0%, 18%)', borderRadius: 8 }} itemStyle={{ color: 'hsl(0, 0%, 100%)' }} />
-                <Area type="monotone" dataKey="income" stroke="hsl(145, 55%, 58%)" fillOpacity={1} fill="url(#incGrad)" strokeWidth={2} name="Receita" />
-                <Area type="monotone" dataKey="expenses" stroke="hsl(0, 70%, 55%)" fill="transparent" strokeWidth={2} strokeDasharray="5 5" name="Gastos" />
-              </AreaChart>
+                <Bar dataKey="total" radius={[8, 8, 0, 0]} name="Valor">
+                  {[
+                    { color: 'hsl(145, 55%, 58%)' },
+                    { color: 'hsl(0, 70%, 55%)' },
+                  ].map((entry, idx) => (
+                    <Cell key={idx} fill={entry.color} />
+                  ))}
+                </Bar>
+              </BarChart>
             </ResponsiveContainer>
           </div>
         </motion.div>
@@ -193,12 +198,12 @@ const DashboardPage = () => {
             </div>
             <div className="space-y-2 flex-1 min-w-0">
               {(stats?.expensesByCategory ?? []).slice(0, 5).map(c => (
-                <div key={c.categoryId ?? c.categoryName} className="flex items-center justify-between text-sm">
-                  <div className="flex items-center gap-2">
+                <div key={c.categoryId ?? c.categoryName} className="flex items-center justify-between text-sm min-w-0 gap-2">
+                  <div className="flex items-center gap-2 min-w-0 flex-1">
                     <div className="w-2.5 h-2.5 rounded-full" style={{ backgroundColor: c.color }} />
                     <span className="text-muted-foreground truncate">{c.categoryName}</span>
                   </div>
-                  <span className="font-medium font-mono-nums">{formatCurrency(c.total)}</span>
+                  <span className="font-medium font-mono-nums shrink-0">{formatCurrency(c.total)}</span>
                 </div>
               ))}
             </div>

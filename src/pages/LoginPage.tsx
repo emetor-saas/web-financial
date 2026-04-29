@@ -39,9 +39,6 @@ const LoginPage = () => {
         <div className="text-center space-y-3 sm:space-y-5">
           <div>
             <h1 className="font-display text-2xl sm:text-3xl font-black text-foreground tracking-tight">Clareza</h1>
-            <p className="text-muted-foreground text-xs sm:text-sm mt-1.5">
-              Entre para acessar seu diagnóstico e planos financeiros.
-            </p>
           </div>
         </div>
 
