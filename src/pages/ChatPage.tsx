@@ -71,7 +71,7 @@ export default function ChatPage() {
 
   if (user && !tenantCanUseChat(user)) {
     return (
-      <div className="max-w-lg mx-auto px-4 py-12 text-center space-y-4">
+      <div className="max-w-lg mx-auto px-4 py-8 sm:py-12 text-center space-y-4">
         <div className="w-14 h-14 rounded-2xl bg-primary/10 border border-primary/20 flex items-center justify-center mx-auto">
           <Crown size={28} className="text-primary" />
         </div>
@@ -91,9 +91,9 @@ export default function ChatPage() {
   }
 
   return (
-    <div className="min-h-[calc(100dvh-8rem)] sm:min-h-[calc(100dvh-10rem)] flex flex-col max-w-3xl mx-auto w-full">
+    <div className="min-h-[calc(100dvh-8rem)] sm:min-h-[calc(100dvh-10rem)] flex flex-col max-w-3xl mx-auto w-full px-1 sm:px-0">
       {/* Header */}
-      <div className="flex-shrink-0 py-4 border-b border-border">
+      <div className="flex-shrink-0 py-3 sm:py-4 border-b border-border px-1">
         <div className="flex items-center gap-3">
           <div className="w-10 h-10 rounded-xl bg-primary/20 border border-primary/20 flex items-center justify-center">
             <Sparkles size={20} className="text-primary" />
@@ -112,7 +112,7 @@ export default function ChatPage() {
       {/* Messages */}
       <div
         ref={scrollRef}
-        className="flex-1 overflow-y-auto overflow-x-hidden py-6 px-1 min-h-0"
+        className="flex-1 overflow-y-auto overflow-x-hidden py-4 sm:py-6 px-1 min-h-0"
       >
         {messages.length === 0 ? (
           <div className="flex flex-col items-center justify-center h-full min-h-[280px] text-center px-4">
@@ -161,7 +161,7 @@ export default function ChatPage() {
                 )}
                 <div
                   className={cn(
-                    'max-w-[85%] sm:max-w-[75%] rounded-2xl px-4 py-3 text-sm leading-relaxed',
+                    'max-w-[88%] sm:max-w-[75%] rounded-2xl px-3 sm:px-4 py-2.5 sm:py-3 text-sm leading-relaxed',
                     msg.role === 'user'
                       ? 'bg-primary text-primary-foreground ml-auto'
                       : 'bg-muted/60 border border-border text-foreground'
@@ -186,7 +186,7 @@ export default function ChatPage() {
       </div>
 
       {/* Input */}
-      <div className="flex-shrink-0 pt-4 pb-2 sm:pb-4">
+      <div className="flex-shrink-0 pt-3 sm:pt-4 pb-2 sm:pb-4">
         <div className="flex gap-2 rounded-2xl bg-muted/60 border border-border p-2 focus-within:border-primary/40 focus-within:ring-1 focus-within:ring-primary/20 transition-all duration-200">
           <textarea
             value={input}

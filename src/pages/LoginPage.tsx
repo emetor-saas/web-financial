@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
-import { BrainCircuit, Mail, Lock } from 'lucide-react';
+import { Mail, Lock } from 'lucide-react';
 import { motion } from 'framer-motion';
 import { useAuth } from '@/context/AuthContext';
 import { toast } from 'sonner';
@@ -29,29 +29,25 @@ const LoginPage = () => {
   };
 
   return (
-    <div className="min-h-screen min-h-[100dvh] bg-background bg-[radial-gradient(ellipse_80%_60%_at_50%_-10%,rgba(255,255,255,0.05),transparent)] flex items-center justify-center p-4 sm:p-6 safe-area-inset">
+    <div className="min-h-screen min-h-[100dvh] bg-background bg-[radial-gradient(ellipse_80%_60%_at_50%_-10%,rgba(255,255,255,0.05),transparent)] flex items-start sm:items-center justify-center p-3 sm:p-6 safe-area-inset overflow-y-auto">
       <motion.div
         initial={{ opacity: 0, y: 12 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ duration: 0.3 }}
-        className="w-full max-w-md space-y-8"
+        className="w-full max-w-md rounded-2xl border border-border/70 bg-card/60 backdrop-blur-sm px-4 py-5 sm:px-6 sm:py-7 space-y-5 sm:space-y-7 mt-3 sm:mt-0"
       >
-        {/* Logo */}
-        <div className="text-center space-y-5">
-          <div className="w-[72px] h-[72px] bg-primary rounded-2xl flex items-center justify-center mx-auto shadow-glow-primary border border-primary/20">
-            <BrainCircuit size={32} className="text-primary-foreground" />
-          </div>
+        <div className="text-center space-y-3 sm:space-y-5">
           <div>
-            <h1 className="font-display text-3xl font-black text-foreground tracking-tight">Clareza</h1>
-            <p className="text-muted-foreground text-sm mt-1.5">
+            <h1 className="font-display text-2xl sm:text-3xl font-black text-foreground tracking-tight">Clareza</h1>
+            <p className="text-muted-foreground text-xs sm:text-sm mt-1.5">
               Entre para acessar seu diagnóstico e planos financeiros.
             </p>
           </div>
         </div>
 
-        <form onSubmit={handleSubmit} className="space-y-4">
+        <form onSubmit={handleSubmit} className="space-y-3.5 sm:space-y-4">
           <div className="space-y-2">
-            <label className="text-xs font-semibold uppercase tracking-widest text-muted-foreground">
+            <label className="text-[11px] sm:text-xs font-semibold uppercase tracking-widest text-muted-foreground">
               Email
             </label>
             <div className="flex items-center gap-2 px-3 py-2.5 rounded-xl border border-border bg-card/60 focus-within:border-primary/60 focus-within:ring-1 focus-within:ring-primary/20 transition-all duration-200">
@@ -68,7 +64,7 @@ const LoginPage = () => {
           </div>
 
           <div className="space-y-2">
-            <label className="text-xs font-semibold uppercase tracking-widest text-muted-foreground">
+            <label className="text-[11px] sm:text-xs font-semibold uppercase tracking-widest text-muted-foreground">
               Senha
             </label>
             <div className="flex items-center gap-2 px-3 py-2.5 rounded-xl border border-border bg-card/60 focus-within:border-primary/60 focus-within:ring-1 focus-within:ring-primary/20 transition-all duration-200">

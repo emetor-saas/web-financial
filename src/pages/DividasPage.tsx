@@ -26,7 +26,7 @@ const DividasPage = () => {
   return (
     <div className="p-4 sm:p-6 lg:p-8 space-y-6 max-w-5xl mx-auto">
       <motion.div {...anim(0)}>
-        <h1 className="font-display text-2xl lg:text-3xl font-bold">Mapa de Dívidas</h1>
+        <h1 className="font-display text-2xl sm:text-3xl font-bold">Mapa de Dívidas</h1>
         <p className="text-muted-foreground text-sm mt-1">Análise detalhada e estratégia de quitação.</p>
       </motion.div>
 
@@ -78,20 +78,25 @@ const DividasPage = () => {
       {/* Debt Cards */}
       <div className="space-y-4">
         <h3 className="font-display font-semibold">Ordem de Ataque Recomendada</h3>
+        {list.length === 0 && (
+          <div className="rounded-xl border border-border bg-card px-4 py-4 text-sm text-muted-foreground">
+            Nenhuma dívida cadastrada ainda.
+          </div>
+        )}
         {list
           .slice()
           .sort((a, b) => a.attackOrder - b.attackOrder)
           .map((d, i) => (
           <motion.div key={d.id} {...anim(5 + i)} className="bg-card border border-border rounded-xl p-5">
-            <div className="flex items-start justify-between mb-3">
-              <div>
+            <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-2 mb-3">
+              <div className="min-w-0">
                 <div className="flex items-center gap-2">
                   <span className="w-6 h-6 bg-destructive/20 text-destructive text-xs font-bold rounded flex items-center justify-center">#{d.attackOrder}</span>
-                  <h4 className="font-semibold">{d.name}</h4>
+                  <h4 className="font-semibold truncate">{d.name}</h4>
                 </div>
                 <span className="text-xs text-muted-foreground">{d.type}</span>
               </div>
-              <span className="text-xl font-display font-bold text-destructive tabular-nums">{formatCurrency(d.balance)}</span>
+              <span className="text-lg sm:text-xl font-display font-bold text-destructive tabular-nums">{formatCurrency(d.balance)}</span>
             </div>
             <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 text-sm">
               <div><span className="text-muted-foreground text-xs">Parcela</span><p className="font-semibold tabular-nums">{formatCurrency(d.monthlyPayment)}</p></div>

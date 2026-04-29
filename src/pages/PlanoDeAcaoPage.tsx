@@ -69,7 +69,7 @@ const PlanoDeAcaoPage = () => {
   return (
     <div className="p-4 sm:p-6 lg:p-8 space-y-6 max-w-4xl mx-auto">
       <motion.div {...anim(0)}>
-        <h1 className="font-display text-2xl lg:text-3xl font-bold">Plano de Ação — 30 Dias</h1>
+        <h1 className="font-display text-2xl sm:text-3xl font-bold">Plano de Ação — 30 Dias</h1>
         <p className="text-muted-foreground text-sm mt-1">Ações priorizadas para melhorar sua saúde financeira.</p>
       </motion.div>
 
@@ -82,7 +82,7 @@ const PlanoDeAcaoPage = () => {
 
       {/* Progress */}
       <motion.div {...anim(2)} className="bg-card border border-border rounded-xl p-6 shadow-premium">
-        <div className="flex items-center justify-between mb-3">
+        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-1 mb-3">
           <span className="font-display font-semibold">Progresso Geral</span>
           <span className="text-2xl font-display font-bold text-primary tabular-nums">{progress}%</span>
         </div>

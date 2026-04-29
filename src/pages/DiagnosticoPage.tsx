@@ -119,7 +119,7 @@ const DiagnosticoPage = () => {
   return (
     <div className="p-4 sm:p-6 lg:p-8 space-y-6 sm:space-y-8 max-w-5xl mx-auto">
       <motion.div {...anim(0)} className="text-center space-y-3">
-        <h1 className="font-display text-3xl font-black tracking-tight">Diagnóstico de Saúde Financeira</h1>
+        <h1 className="font-display text-2xl sm:text-3xl font-black tracking-tight">Diagnóstico de Saúde Financeira</h1>
         <p className="text-muted-foreground max-w-xl mx-auto text-sm">
           Sua saúde financeira é medida pelos quatro pilares da Clareza (0–100 cada no mapa). O equilíbrio entre eles define sua resiliência.
         </p>
@@ -147,7 +147,7 @@ const DiagnosticoPage = () => {
         )}
       </motion.div>
 
-      <motion.div {...anim(2)} className="card-solid rounded-2xl p-6 space-y-2">
+      <motion.div {...anim(2)} className="card-solid rounded-2xl p-4 sm:p-6 space-y-2">
         <h3 className="font-display font-semibold">{narrative.stageTitle}</h3>
         <p className="text-sm text-muted-foreground"><strong>Contexto:</strong> {narrative.context}.</p>
         <p className="text-sm text-muted-foreground"><strong>Foco agora:</strong> {narrative.focus}.</p>
@@ -164,7 +164,7 @@ const DiagnosticoPage = () => {
         </h2>
 
         {/* Legenda em 2 colunas */}
-        <div className="grid grid-cols-2 gap-x-6 gap-y-2 max-w-md mx-auto mb-8 text-xs sm:text-sm text-muted-foreground">
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-x-6 gap-y-2 max-w-md mx-auto mb-8 text-xs sm:text-sm text-muted-foreground">
           {LEGEND_RANGES.map((item) => (
             <div key={item.range} className="flex items-baseline justify-between gap-2 border-b border-border/50 pb-1.5">
               <span className="font-medium tabular-nums text-foreground/80">{item.range}</span>
@@ -173,7 +173,7 @@ const DiagnosticoPage = () => {
           ))}
         </div>
 
-        <div className="h-[min(420px,85vw)] w-full max-w-[420px] mx-auto">
+        <div className="h-[min(360px,85vw)] sm:h-[min(420px,85vw)] w-full max-w-[420px] mx-auto">
           <ResponsiveContainer width="100%" height="100%">
             <RadarChart cx="50%" cy="52%" outerRadius="68%" data={radarData}>
               <PolarGrid
@@ -277,7 +277,7 @@ const DiagnosticoPage = () => {
       </motion.div>
 
       {/* Evolução — só quando houver histórico real no futuro pode substituir */}
-      <motion.div {...anim(4)} className="card-solid rounded-2xl p-6 hover:border-border transition-all duration-200">
+      <motion.div {...anim(4)} className="card-solid rounded-2xl p-4 sm:p-6 hover:border-border transition-all duration-200">
         <h3 className="font-display font-semibold mb-2">Evolução do score geral</h3>
         <p className="text-xs text-muted-foreground mb-4">
           A linha do mês atual reflete o score Clareza atual; demais pontos são ilustrativos até termos histórico mensal.

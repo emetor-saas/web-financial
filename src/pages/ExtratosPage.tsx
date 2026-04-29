@@ -129,7 +129,7 @@ const ExtratosPage = () => {
     <div className="p-4 sm:p-6 lg:p-8 space-y-8 max-w-5xl mx-auto">
       <header className="flex flex-col sm:flex-row justify-between sm:items-end gap-4">
         <div>
-          <h1 className="font-display text-2xl lg:text-3xl font-black tracking-tight">Extratos e dados</h1>
+          <h1 className="font-display text-2xl sm:text-3xl font-black tracking-tight">Extratos e dados</h1>
           <p className="text-muted-foreground text-sm mt-0.5">
             Conecte sua instituição via Open Finance (recomendado) ou importe arquivos manualmente.
           </p>
@@ -266,16 +266,16 @@ const ExtratosPage = () => {
               Envie OFX, CSV, Excel ou PDF para revisar e importar lançamentos.
             </p>
           </div>
-          <div className="flex items-center gap-2">
+          <div className="flex w-full sm:w-auto flex-col sm:flex-row items-stretch sm:items-center gap-2">
             <button
               type="button"
               onClick={() => refetch()}
-              className="inline-flex items-center gap-2 rounded-xl border border-border bg-card px-3 py-2 text-xs font-medium text-muted-foreground hover:bg-accent transition-colors"
+              className="inline-flex items-center justify-center gap-2 rounded-xl border border-border bg-card px-3 py-2 text-xs font-medium text-muted-foreground hover:bg-accent transition-colors"
             >
               <RefreshCw size={14} />
               Atualizar lista
             </button>
-            <label className="inline-flex items-center gap-2 rounded-xl border border-border bg-card px-4 py-2 text-xs font-semibold hover:bg-accent cursor-pointer">
+            <label className="inline-flex items-center justify-center gap-2 rounded-xl border border-border bg-card px-4 py-2 text-xs font-semibold hover:bg-accent cursor-pointer">
               <Upload size={14} />
               {uploading ? 'Enviando...' : 'Enviar arquivo'}
               <input
@@ -297,7 +297,7 @@ const ExtratosPage = () => {
           </p>
         ) : (
           <div className="overflow-x-auto rounded-xl border border-border">
-            <table className="w-full text-sm">
+            <table className="w-full min-w-[640px] text-sm">
               <thead>
                 <tr className="border-b border-border">
                   <th className="text-left py-2.5 px-2 text-xs text-muted-foreground font-semibold uppercase">
@@ -321,7 +321,7 @@ const ExtratosPage = () => {
               <tbody>
                 {jobs.map((job) => (
                   <tr key={job.id} className="border-b border-border/60 hover:bg-accent/50">
-                    <td className="py-2.5 px-2">{job.fileName}</td>
+                    <td className="py-2.5 px-2 max-w-[220px] truncate" title={job.fileName}>{job.fileName}</td>
                     <td className="py-2.5 px-2 text-xs uppercase text-muted-foreground">{job.fileType}</td>
                     <td className="py-2.5 px-2 text-xs text-muted-foreground">
                       {(job.fileSize / (1024 * 1024)).toFixed(2)} MB

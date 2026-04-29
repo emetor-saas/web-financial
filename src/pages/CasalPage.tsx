@@ -2,7 +2,7 @@ import { useAuth } from '@/context/AuthContext';
 import { Navigate } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import { formatCurrency, getScoreColor, getScoreLabel } from '@/utils/formatters';
-import { Users, BrainCircuit, Calendar, Circle, MessageCircle, AlertTriangle } from 'lucide-react';
+import { Users, Sparkles, Calendar, Circle, MessageCircle, AlertTriangle } from 'lucide-react';
 import { PieChart, Pie, Cell, ResponsiveContainer, BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip } from 'recharts';
 import { useQuery } from '@tanstack/react-query';
 import { fetchCoupleOverview } from '@/services/couple';
@@ -302,7 +302,7 @@ const CasalPage = () => {
 
       <motion.div {...anim(7)} className="bg-primary/10 border border-primary/20 rounded-xl p-6">
         <div className="flex items-center gap-2 text-primary mb-4">
-          <BrainCircuit size={18} />
+          <Sparkles size={18} />
           <h3 className="font-display font-semibold">Lembretes e check-ins</h3>
         </div>
         {upcomingReminders.length === 0 ? (

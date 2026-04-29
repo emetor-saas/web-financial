@@ -85,7 +85,7 @@ const DashboardPage = () => {
           ou registrar movimentações reais.
         </motion.div>
       )}
-      <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">
         <motion.div {...anim(0)} className="card-solid rounded-2xl p-4 sm:p-6 flex flex-col items-center justify-center hover:border-border transition-all duration-200">
           <span className="text-xs font-bold text-muted-foreground uppercase tracking-wider mb-2">Score Clareza</span>
           <span className={`text-4xl sm:text-5xl font-display font-black font-mono-nums ${getScoreColor(auraScore)}`}>
@@ -173,8 +173,8 @@ const DashboardPage = () => {
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
         <motion.div {...anim(7)} className="card-solid rounded-2xl p-6 hover:border-border transition-all duration-200">
           <h3 className="font-display font-semibold tracking-tight mb-4">Categorias de Gasto</h3>
-          <div className="flex gap-6">
-            <div className="w-40 h-40 flex-shrink-0">
+          <div className="flex flex-col sm:flex-row gap-6">
+            <div className="w-full max-w-[180px] h-40 flex-shrink-0 mx-auto sm:mx-0">
               <ResponsiveContainer width="100%" height="100%">
                 <PieChart>
                   <Pie
@@ -191,12 +191,12 @@ const DashboardPage = () => {
                 </PieChart>
               </ResponsiveContainer>
             </div>
-            <div className="space-y-2 flex-1">
+            <div className="space-y-2 flex-1 min-w-0">
               {(stats?.expensesByCategory ?? []).slice(0, 5).map(c => (
                 <div key={c.categoryId ?? c.categoryName} className="flex items-center justify-between text-sm">
                   <div className="flex items-center gap-2">
                     <div className="w-2.5 h-2.5 rounded-full" style={{ backgroundColor: c.color }} />
-                    <span className="text-muted-foreground">{c.categoryName}</span>
+                    <span className="text-muted-foreground truncate">{c.categoryName}</span>
                   </div>
                   <span className="font-medium font-mono-nums">{formatCurrency(c.total)}</span>
                 </div>
