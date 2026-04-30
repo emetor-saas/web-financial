@@ -129,9 +129,17 @@ export const Topbar = ({ showMenuButton, onMenuClick }: TopbarProps) => {
             onClick={() => setShowProfileMenu(!showProfileMenu)}
             className="flex items-center gap-2 bg-muted/60 border border-border px-2 sm:px-3 py-2 rounded-xl hover:bg-accent transition-all duration-200 min-h-[44px]"
           >
-            <div className="w-8 h-8 sm:w-7 sm:h-7 rounded-lg bg-primary/20 flex items-center justify-center text-xs font-bold text-primary font-mono-nums flex-shrink-0">
-              {initial}
-            </div>
+            {user?.avatar ? (
+              <img
+                src={user.avatar}
+                alt={`Avatar de ${displayName}`}
+                className="w-8 h-8 sm:w-7 sm:h-7 rounded-lg object-cover object-center border border-border flex-shrink-0"
+              />
+            ) : (
+              <div className="w-8 h-8 sm:w-7 sm:h-7 rounded-lg bg-primary/20 flex items-center justify-center text-xs font-bold text-primary font-mono-nums flex-shrink-0">
+                {initial}
+              </div>
+            )}
             <span className="text-sm font-medium text-foreground hidden sm:inline truncate max-w-[120px]">{displayName}</span>
             <ChevronDown size={14} className="text-muted-foreground hidden sm:block flex-shrink-0" />
           </button>

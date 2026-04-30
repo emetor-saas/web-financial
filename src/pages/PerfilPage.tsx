@@ -26,6 +26,16 @@ function formatMemberSince(iso: string): string {
   return s.charAt(0).toUpperCase() + s.slice(1);
 }
 
+function maskPhoneBr(value: string): string {
+  const digits = value.replace(/\D/g, '').slice(0, 11);
+  if (digits.length <= 2) return digits;
+  if (digits.length <= 6) return `(${digits.slice(0, 2)}) ${digits.slice(2)}`;
+  if (digits.length <= 10) {
+    return `(${digits.slice(0, 2)}) ${digits.slice(2, 6)}-${digits.slice(6)}`;
+  }
+  return `(${digits.slice(0, 2)}) ${digits.slice(2, 7)}-${digits.slice(7)}`;
+}
+
 const PerfilPage = () => {
   const { isAuthenticated, refreshUser } = useAuth();
   const queryClient = useQueryClient();
@@ -194,18 +204,18 @@ const PerfilPage = () => {
             <img
               src={profile.avatar}
               alt={`Foto de ${displayName}`}
-              className="w-16 h-16 rounded-full object-cover border border-border"
+              className="w-24 h-24 rounded-full object-cover object-center border-2 border-border shadow-sm"
             />
           ) : (
-            <div className="w-16 h-16 bg-primary/20 rounded-full flex items-center justify-center text-2xl font-bold text-primary">
+            <div className="w-24 h-24 bg-primary/20 rounded-full flex items-center justify-center text-3xl font-bold text-primary">
               {displayName.charAt(0)}
             </div>
           )}
           <label
-            className="absolute -bottom-1 -right-1 w-7 h-7 rounded-full bg-primary text-primary-foreground flex items-center justify-center cursor-pointer hover:opacity-90"
+            className="absolute -bottom-1 -right-1 w-9 h-9 rounded-full bg-primary text-primary-foreground flex items-center justify-center cursor-pointer hover:opacity-90 border-2 border-card"
             title="Enviar nova foto"
           >
-            <Camera size={14} />
+            <Camera size={16} />
             <input
               type="file"
               accept="image/jpeg,image/png,image/webp"
@@ -293,7 +303,8 @@ const PerfilPage = () => {
             <label className="text-xs text-muted-foreground font-semibold uppercase">Celular</label>
             <input
               value={formData.phone}
-              onChange={(e) => setFormData({ ...formData, phone: e.target.value })}
+              onChange={(e) => setFormData({ ...formData, phone: maskPhoneBr(e.target.value) })}
+              placeholder="(11) 99999-9999"
               className="w-full bg-input border border-border rounded-md px-3 py-2 text-sm text-foreground mt-1 focus:outline-none focus:ring-1 focus:ring-primary"
             />
           </div>

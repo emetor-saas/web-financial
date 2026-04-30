@@ -15,6 +15,7 @@ export interface AuthUser {
   email: string;
   name: string;
   role: 'MASTER' | 'TENANT_USER' | string;
+  avatar?: string | null;
   language?: string | null;
   household: {
     id: string;
