@@ -1,11 +1,11 @@
 import { useAuth } from '@/context/AuthContext';
 import { motion } from 'framer-motion';
 import { formatCurrency } from '@/utils/formatters';
-import { useEffect, useState } from 'react';
-import { User, Bell, Shield, CreditCard, Target, Clock } from 'lucide-react';
+import { type ChangeEvent, useEffect, useState } from 'react';
+import { User, Bell, Shield, CreditCard, Target, Clock, Camera } from 'lucide-react';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { toast } from 'sonner';
-import { fetchProfile, patchProfile } from '@/services/profile';
+import { fetchProfile, patchProfile, uploadProfileAvatar } from '@/services/profile';
 import { fetchHouseholdUsers } from '@/services/householdUsers';
 import { fetchGoals } from '@/services/goals';
 import { apiFetch } from '@/lib/apiClient';
@@ -54,12 +54,26 @@ const PerfilPage = () => {
     enabled: isAuthenticated,
   });
 
-  const [formData, setFormData] = useState({ name: '', email: '' });
+  const [formData, setFormData] = useState({
+    name: '',
+    email: '',
+    gender: '',
+    age: '',
+    city: '',
+    phone: '',
+  });
 
   useEffect(() => {
     if (!profile) return;
-    setFormData({ name: profile.name, email: profile.email });
-  }, [profile?.id, profile?.name, profile?.email]);
+    setFormData({
+      name: profile.name,
+      email: profile.email,
+      gender: profile.gender ?? '',
+      age: profile.age != null ? String(profile.age) : '',
+      city: profile.city ?? '',
+      phone: profile.phone ?? '',
+    });
+  }, [profile]);
 
   const tenantMembers = householdUsers.filter((u) => u.role !== 'MASTER');
   const isSharedAccount = tenantMembers.length >= 2;
@@ -74,6 +88,13 @@ const PerfilPage = () => {
       patchProfile({
         name: formData.name.trim(),
         email: formData.email.trim().toLowerCase(),
+        gender:
+          formData.gender === ''
+            ? null
+            : (formData.gender as 'female' | 'male' | 'non_binary' | 'prefer_not_to_say'),
+        age: formData.age.trim() === '' ? null : Number(formData.age),
+        city: formData.city.trim() === '' ? null : formData.city.trim(),
+        phone: formData.phone.trim() === '' ? null : formData.phone.trim(),
       }),
     onSuccess: async () => {
       await queryClient.invalidateQueries({ queryKey: ['profile'] });
@@ -82,6 +103,18 @@ const PerfilPage = () => {
     },
     onError: (e: unknown) => {
       toast.error(e instanceof Error ? e.message : 'Erro ao salvar perfil');
+    },
+  });
+
+  const avatarMutation = useMutation({
+    mutationFn: (file: File) => uploadProfileAvatar(file),
+    onSuccess: async () => {
+      await queryClient.invalidateQueries({ queryKey: ['profile'] });
+      await refreshUser();
+      toast.success('Foto de perfil atualizada.');
+    },
+    onError: (e: unknown) => {
+      toast.error(e instanceof Error ? e.message : 'Erro ao enviar foto');
     },
   });
 
@@ -94,7 +127,29 @@ const PerfilPage = () => {
       toast.error('E-mail inválido.');
       return;
     }
+    if (formData.age.trim() !== '') {
+      const age = Number(formData.age);
+      if (!Number.isFinite(age) || age < 13 || age > 120) {
+        toast.error('Idade deve estar entre 13 e 120 anos.');
+        return;
+      }
+    }
     saveMutation.mutate();
+  };
+
+  const handleAvatarUpload = (event: ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
+    event.currentTarget.value = '';
+    if (!file) return;
+    if (!['image/jpeg', 'image/png', 'image/webp'].includes(file.type)) {
+      toast.error('Formato inválido. Use JPG, PNG ou WEBP.');
+      return;
+    }
+    if (file.size > 5 * 1024 * 1024) {
+      toast.error('Imagem deve ter até 5MB.');
+      return;
+    }
+    avatarMutation.mutate(file);
   };
 
   if (!isAuthenticated) {
@@ -134,8 +189,31 @@ const PerfilPage = () => {
       </motion.div>
 
       <motion.div {...anim(1)} className="bg-card border border-border rounded-xl p-6 flex items-center gap-6">
-        <div className="w-16 h-16 bg-primary/20 rounded-full flex items-center justify-center text-2xl font-bold text-primary">
-          {displayName.charAt(0)}
+        <div className="relative">
+          {profile.avatar ? (
+            <img
+              src={profile.avatar}
+              alt={`Foto de ${displayName}`}
+              className="w-16 h-16 rounded-full object-cover border border-border"
+            />
+          ) : (
+            <div className="w-16 h-16 bg-primary/20 rounded-full flex items-center justify-center text-2xl font-bold text-primary">
+              {displayName.charAt(0)}
+            </div>
+          )}
+          <label
+            className="absolute -bottom-1 -right-1 w-7 h-7 rounded-full bg-primary text-primary-foreground flex items-center justify-center cursor-pointer hover:opacity-90"
+            title="Enviar nova foto"
+          >
+            <Camera size={14} />
+            <input
+              type="file"
+              accept="image/jpeg,image/png,image/webp"
+              className="hidden"
+              onChange={handleAvatarUpload}
+              disabled={avatarMutation.isPending}
+            />
+          </label>
         </div>
         <div>
           <h2 className="font-display font-bold text-xl">{displayName}</h2>
@@ -176,6 +254,46 @@ const PerfilPage = () => {
               type="email"
               value={formData.email}
               onChange={(e) => setFormData({ ...formData, email: e.target.value })}
+              className="w-full bg-input border border-border rounded-md px-3 py-2 text-sm text-foreground mt-1 focus:outline-none focus:ring-1 focus:ring-primary"
+            />
+          </div>
+          <div>
+            <label className="text-xs text-muted-foreground font-semibold uppercase">Gênero</label>
+            <select
+              value={formData.gender}
+              onChange={(e) => setFormData({ ...formData, gender: e.target.value })}
+              className="w-full bg-input border border-border rounded-md px-3 py-2 text-sm text-foreground mt-1 focus:outline-none focus:ring-1 focus:ring-primary"
+            >
+              <option value="">Prefiro não informar</option>
+              <option value="female">Feminino</option>
+              <option value="male">Masculino</option>
+              <option value="prefer_not_to_say">Outro / não informar</option>
+            </select>
+          </div>
+          <div>
+            <label className="text-xs text-muted-foreground font-semibold uppercase">Idade</label>
+            <input
+              type="number"
+              min={13}
+              max={120}
+              value={formData.age}
+              onChange={(e) => setFormData({ ...formData, age: e.target.value })}
+              className="w-full bg-input border border-border rounded-md px-3 py-2 text-sm text-foreground mt-1 focus:outline-none focus:ring-1 focus:ring-primary"
+            />
+          </div>
+          <div>
+            <label className="text-xs text-muted-foreground font-semibold uppercase">Cidade</label>
+            <input
+              value={formData.city}
+              onChange={(e) => setFormData({ ...formData, city: e.target.value })}
+              className="w-full bg-input border border-border rounded-md px-3 py-2 text-sm text-foreground mt-1 focus:outline-none focus:ring-1 focus:ring-primary"
+            />
+          </div>
+          <div>
+            <label className="text-xs text-muted-foreground font-semibold uppercase">Celular</label>
+            <input
+              value={formData.phone}
+              onChange={(e) => setFormData({ ...formData, phone: e.target.value })}
               className="w-full bg-input border border-border rounded-md px-3 py-2 text-sm text-foreground mt-1 focus:outline-none focus:ring-1 focus:ring-primary"
             />
           </div>

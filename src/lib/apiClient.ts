@@ -5,6 +5,18 @@ const API_BASE_URL =
         ? String(import.meta.env.VITE_API_URL)
         : '');
 
+function buildUserFacingErrorMessage(status: number): string {
+  if (status === 400) return 'Não foi possível processar sua solicitação.';
+  if (status === 401) return 'Sua sessão expirou. Faça login novamente.';
+  if (status === 403) return 'Você não tem permissão para realizar esta ação.';
+  if (status === 404) return 'Não encontramos o recurso solicitado.';
+  if (status === 409) return 'Conflito de dados. Atualize a página e tente novamente.';
+  if (status === 422) return 'Os dados informados são inválidos.';
+  if (status === 429) return 'Muitas tentativas em sequência. Aguarde e tente novamente.';
+  if (status >= 500) return 'Estamos com instabilidade no momento. Tente novamente em instantes.';
+  return 'Não foi possível concluir a operação.';
+}
+
 function getApiUrl(path: string): string {
   if (/^https?:\/\//i.test(path)) return path;
   const base = API_BASE_URL.replace(/\/$/, '');
@@ -28,11 +40,8 @@ export async function apiFetch<T = unknown>(
   });
 
   if (!res.ok) {
-    // Aqui podemos sofisticar depois (401, 403, etc.)
-    const text = await res.text().catch(() => '');
-    throw new Error(
-      `Erro na API (${res.status})${text ? `: ${text.slice(0, 200)}` : ''}`,
-    );
+    // Evita expor detalhes internos da API para o usuário final.
+    throw new Error(buildUserFacingErrorMessage(res.status));
   }
 
   // 204 No Content
