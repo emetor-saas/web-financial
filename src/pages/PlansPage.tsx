@@ -2,7 +2,7 @@ import { useState, useMemo, useEffect } from 'react';
 import { useSearchParams } from 'react-router-dom';
 import { useQuery, useMutation } from '@tanstack/react-query';
 import { useAuth } from '@/context/AuthContext';
-import { listPublicPlans, createCheckout } from '@/services/plans';
+import { listPublicPlans, createCheckout, createBillingPortalSession } from '@/services/plans';
 import {
   listMasterPlans,
   createMasterPlan,
@@ -10,7 +10,7 @@ import {
   deactivateMasterPlan,
 } from '@/services/masterPlans';
 import { toast } from 'sonner';
-import { CreditCard, Crown, Loader2, Plus, CheckCircle2, Trash2 } from 'lucide-react';
+import { CreditCard, Crown, ExternalLink, Loader2, Plus, CheckCircle2, Trash2 } from 'lucide-react';
 
 function formatPrice(amountInCents: number, currency: string) {
   if (amountInCents === 0) return 'Gratuito';
@@ -65,17 +65,61 @@ const TenantPlansSection = () => {
 
   const checkoutMutation = useMutation({
     mutationFn: (priceId: string) => createCheckout(priceId),
-    onSuccess: (res) => {
-      if (res.url) {
-        window.location.href = res.url;
-      } else {
-        toast.error('Não foi possível abrir o checkout.');
-      }
-    },
     onError: (err) => {
       toast.error(err instanceof Error ? err.message : 'Erro ao iniciar checkout.');
     },
   });
+
+  const portalMutation = useMutation({
+    mutationFn: () => createBillingPortalSession(),
+    onError: (err) => {
+      toast.error(err instanceof Error ? err.message : 'Erro ao abrir o portal de assinatura.');
+    },
+  });
+
+  const openBillingPortalInNewTab = () => {
+    const tab = window.open('about:blank', '_blank', 'noopener,noreferrer');
+    if (!tab) {
+      toast.error('Permita pop-ups neste site para abrir o portal em nova guia.');
+      return;
+    }
+    void portalMutation.mutateAsync().then(
+      (res) => {
+        if (res.url) {
+          tab.opener = null;
+          tab.location.href = res.url;
+        } else {
+          tab.close();
+          toast.error('Não foi possível abrir o portal.');
+        }
+      },
+      () => {
+        tab.close();
+      },
+    );
+  };
+
+  const openCheckoutInNewTab = (priceId: string) => {
+    const tab = window.open('about:blank', '_blank', 'noopener,noreferrer');
+    if (!tab) {
+      toast.error('Permita pop-ups neste site para abrir o checkout em nova guia.');
+      return;
+    }
+    checkoutMutation.mutate(priceId, {
+      onSuccess: (res) => {
+        if (res.url && tab) {
+          tab.opener = null;
+          tab.location.href = res.url;
+        } else {
+          tab?.close();
+          toast.error('Não foi possível abrir o checkout.');
+        }
+      },
+      onError: () => {
+        tab?.close();
+      },
+    });
+  };
 
   return (
     <div className="p-4 sm:p-6 lg:p-8 space-y-6 max-w-5xl mx-auto">
@@ -107,6 +151,37 @@ const TenantPlansSection = () => {
                 )}
             </span>
           </p>
+        )}
+
+        {user?.billing?.hasPaidSubscription && (
+          <div className="rounded-2xl border border-border bg-card/80 px-4 py-4 space-y-3">
+            <div className="space-y-1">
+              <h2 className="font-display font-semibold text-sm tracking-tight">Sua assinatura</h2>
+              <p className="text-xs text-muted-foreground leading-relaxed">
+                Pelo portal seguro da Stripe você pode atualizar o cartão, ver faturas e{' '}
+                <strong className="text-foreground font-medium">cancelar a assinatura</strong> quando quiser (o
+                acesso segue até o fim do período já pago, conforme as regras do seu plano).
+              </p>
+            </div>
+            <button
+              type="button"
+              disabled={portalMutation.isPending}
+              onClick={openBillingPortalInNewTab}
+              className="inline-flex items-center justify-center gap-2 rounded-xl border border-border bg-background px-4 py-2.5 text-xs font-semibold text-foreground shadow-sm hover:bg-muted/50 disabled:opacity-60 transition-colors"
+            >
+              {portalMutation.isPending ? (
+                <>
+                  <Loader2 size={14} className="animate-spin shrink-0" />
+                  Abrindo portal...
+                </>
+              ) : (
+                <>
+                  <ExternalLink size={14} className="shrink-0" />
+                  Gerenciar ou cancelar assinatura
+                </>
+              )}
+            </button>
+          </div>
         )}
       </header>
 
@@ -158,7 +233,7 @@ const TenantPlansSection = () => {
                   <button
                     type="button"
                     disabled={checkoutMutation.isPending || !plan.stripePriceId}
-                    onClick={() => plan.stripePriceId && checkoutMutation.mutate(plan.stripePriceId)}
+                    onClick={() => plan.stripePriceId && openCheckoutInNewTab(plan.stripePriceId)}
                     className="mt-4 inline-flex items-center justify-center rounded-xl bg-primary text-primary-foreground px-4 py-2 text-xs font-semibold shadow hover:bg-primary/90 disabled:opacity-60"
                   >
                     {checkoutMutation.isPending ? 'Redirecionando...' : 'Contratar plano'}
