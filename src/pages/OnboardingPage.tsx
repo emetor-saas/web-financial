@@ -2,8 +2,8 @@ import { useState } from 'react';
 import { useNavigate, Navigate } from 'react-router-dom';
 import { useQueryClient } from '@tanstack/react-query';
 import { useAuth } from '@/context/AuthContext';
-import { motion } from 'framer-motion';
-import { ArrowRight, ArrowLeft, CheckCircle2 } from 'lucide-react';
+import { motion, AnimatePresence } from 'framer-motion';
+import { ArrowRight, ArrowLeft, Gauge, Boxes, Sparkles, TrendingUp, Shield, Scale, Rocket, FileSignature, Info, BarChart2 } from 'lucide-react';
 import { toast } from 'sonner';
 import { apiFetch } from '@/lib/apiClient';
 
@@ -21,18 +21,32 @@ type Answers = {
 };
 
 const steps = [
-  { id: 1, title: 'Renda e custos fixos' },
-  { id: 2, title: 'Gastos variáveis e saldo' },
-  { id: 3, title: 'Dívidas e reserva' },
-  { id: 4, title: 'Metas e objetivos' },
-  { id: 5, title: 'Risco e futuras despesas' },
+  { id: 1, title: 'Clareza' },
+  { id: 2, title: 'Controle' },
+  { id: 3, title: 'Segurança' },
+  { id: 4, title: 'Visão' },
+  { id: 5, title: 'Riscos' },
 ] as const;
 
 const anim = (i: number) => ({
-  initial: { opacity: 0, y: 16 },
+  initial: { opacity: 0, y: 20 },
   animate: { opacity: 1, y: 0 },
-  transition: { delay: i * 0.04 },
+  exit: { opacity: 0, y: -20 },
+  transition: { delay: i * 0.05, duration: 0.4, ease: [0.16, 1, 0.3, 1] as [number, number, number, number] },
 });
+
+const InputCard = ({ title, description, children, animIndex = 0 }: { title: string; description: string; children: React.ReactNode; animIndex?: number }) => (
+  <motion.div
+    {...anim(animIndex)}
+    className="bg-white rounded-3xl p-6 sm:p-8 shadow-[0_4px_40px_rgb(0,0,0,0.03)] border border-gray-50"
+  >
+    <div className="space-y-1.5 mb-6">
+      <h3 className="text-[13px] font-bold uppercase tracking-wide text-gray-900">{title}</h3>
+      <p className="text-sm text-gray-500 leading-relaxed">{description}</p>
+    </div>
+    {children}
+  </motion.div>
+);
 
 const OnboardingPage = () => {
   const { isAuthenticated } = useAuth();
@@ -52,8 +66,6 @@ const OnboardingPage = () => {
     perfilRisco: '',
     bombasProgramadas: '',
   });
-
-  const progress = (step / steps.length) * 100;
 
   const update = (patch: Partial<Answers>) =>
     setAnswers((prev) => ({ ...prev, ...patch }));
@@ -99,266 +111,336 @@ const OnboardingPage = () => {
   }
 
   return (
-    <div className="min-h-screen min-h-[100dvh] bg-background flex items-center justify-center p-4 sm:p-6">
-      <motion.div
-        {...anim(0)}
-        className="w-full max-w-2xl bg-card/70 border border-border rounded-3xl shadow-xl p-5 sm:p-8 space-y-6"
-      >
-        <div className="flex items-center justify-between gap-4">
-          <div>
-            <p className="text-xs font-semibold uppercase tracking-widest text-primary">
-              Diagnóstico Clareza
-            </p>
-            <h1 className="font-display text-2xl sm:text-3xl font-bold mt-1">
-              Vamos entender sua casa financeira
-            </h1>
-            <p className="text-xs sm:text-sm text-muted-foreground mt-2 max-w-xl">
-              São 5 blocos rápidos, com 2 perguntas por etapa. Use estimativas
-              sinceras — não precisa ser perfeito, precisa ser verdadeiro.
-            </p>
+    <div className="min-h-screen bg-white text-foreground font-sans flex flex-col">
+      {/* Header */}
+      <header className="w-full bg-[#C7C6CA]/20">
+        <div className="max-w-5xl mx-auto px-6 sm:px-8 py-5 sm:py-6 flex items-center justify-between">
+          <div className="font-bold text-lg tracking-tight text-gray-900">
+            Clareza
           </div>
-          <CheckCircle2 className="hidden sm:block text-primary" size={32} />
+          <div className="flex items-center gap-4">
+            <span className="uppercase tracking-widest text-[10px] font-bold text-gray-400">
+              PASSO {step} DE {steps.length}
+            </span>
+            <div className="relative w-16 sm:w-20 h-[3px] bg-gray-200 rounded-full overflow-hidden">
+              <motion.div
+                initial={false}
+                animate={{ width: `${(step / steps.length) * 100}%` }}
+                transition={{ duration: 0.5, ease: 'easeInOut' }}
+                className="absolute top-0 left-0 h-full bg-black rounded-full"
+              />
+            </div>
+          </div>
+        </div>
+      </header>
+
+      <main className="flex-1 w-full max-w-3xl mx-auto px-6 py-10 flex flex-col">
+        <div className="text-center space-y-3 mb-12">
+          <motion.h1 {...anim(0)} className="text-3xl sm:text-[2rem] font-bold tracking-tight text-gray-900">
+            Vamos entender sua casa financeira
+          </motion.h1>
+          <motion.p {...anim(0)} className="text-[13px] sm:text-sm text-gray-500 max-w-[460px] mx-auto leading-relaxed">
+            {step === 1
+              ? "A clareza sobre suas obrigações e sua segurança é o primeiro passo para o crescimento patrimonial sólido."
+              : step === 2
+                ? "Vamos identificar os principais pontos de pressão no seu orçamento para construir recomendações mais personalizadas."
+                : step === 3
+                  ? "Conhecer suas obrigações e sua reserva de emergência nos ajuda a criar recomendações mais seguras e realistas."
+                  : step === 4
+                    ? "Para criar um plano financeiro personalizado, precisamos entender seus objetivos de curto e longo prazo."
+                    : "Entender sua tolerância a riscos e seus compromissos futuros permite construir recomendações mais alinhadas à sua realidade."}
+          </motion.p>
         </div>
 
-        {/* Progress bar */}
-        <div className="space-y-1">
-          <div className="flex items-center justify-between text-xs text-muted-foreground">
-            <span>Etapa {step} de {steps.length}</span>
-            <span>{Math.round(progress)}%</span>
-          </div>
-          <div className="h-2 bg-accent rounded-full overflow-hidden">
+        <div className="space-y-6 flex-1">
+          <AnimatePresence mode="wait">
             <motion.div
-              initial={{ width: 0 }}
-              animate={{ width: `${progress}%` }}
-              transition={{ duration: 0.4 }}
-              className="h-full bg-primary rounded-full"
-            />
-          </div>
-        </div>
-
-        <div className="text-xs font-semibold uppercase tracking-widest text-muted-foreground">
-          {steps[step - 1]?.title}
-        </div>
-
-        {/* Step content */}
-        <div className="space-y-4">
-          {step === 1 && (
-            <>
-              <motion.div {...anim(1)} className="space-y-2">
-                <label className="text-xs font-semibold uppercase tracking-widest text-muted-foreground">
-                  Renda líquida média mensal
-                </label>
-                <input
-                  type="text"
-                  value={answers.rendaLiquida}
-                  onChange={(e) => update({ rendaLiquida: e.target.value })}
-                  placeholder="Ex.: R$ 4.800 por mês"
-                  className="w-full px-3 py-2.5 rounded-xl border border-border bg-background outline-none text-sm"
-                />
-              </motion.div>
-              <motion.div {...anim(2)} className="space-y-2">
-                <label className="text-xs font-semibold uppercase tracking-widest text-muted-foreground">
-                  3 maiores custos fixos
-                </label>
-                <textarea
-                  value={answers.custosFixos}
-                  onChange={(e) => update({ custosFixos: e.target.value })}
-                  rows={3}
-                  placeholder="Ex.: Aluguel R$ 1.800, Mercado fixo R$ 900, Escola R$ 600"
-                  className="w-full px-3 py-2.5 rounded-xl border border-border bg-background outline-none text-sm resize-none"
-                />
-              </motion.div>
-            </>
-          )}
-
-          {step === 2 && (
-            <>
-              <motion.div {...anim(1)} className="space-y-2">
-                <label className="text-xs font-semibold uppercase tracking-widest text-muted-foreground">
-                  Categoria que mais estoura no variável
-                </label>
-                <input
-                  type="text"
-                  value={answers.categoriaVariavel}
-                  onChange={(e) => update({ categoriaVariavel: e.target.value })}
-                  placeholder="Ex.: iFood, Mercado, Lazer, Transporte..."
-                  className="w-full px-3 py-2.5 rounded-xl border border-border bg-background outline-none text-sm"
-                />
-              </motion.div>
-              <motion.div {...anim(2)} className="space-y-2">
-                <label className="text-xs font-semibold uppercase tracking-widest text-muted-foreground">
-                  Normalmente o mês fecha
-                </label>
-                <div className="grid grid-cols-2 gap-2">
-                  <button
-                    type="button"
-                    onClick={() => update({ saldoMensal: 'azul' })}
-                    className={`px-3 py-2 rounded-xl text-sm border ${
-                      answers.saldoMensal === 'azul'
-                        ? 'bg-emerald-500/15 border-emerald-500 text-emerald-400'
-                        : 'bg-background border-border text-muted-foreground'
-                    }`}
+              key={step}
+              initial={{ opacity: 0, x: 20 }}
+              animate={{ opacity: 1, x: 0 }}
+              exit={{ opacity: 0, x: -20 }}
+              transition={{ duration: 0.3 }}
+              className="space-y-6"
+            >
+              {step === 1 && (
+                <>
+                  <InputCard
+                    title="Renda líquida média mensal"
+                    description="Informe sua renda líquida mensal (valor recebido após descontos de impostos, INSS e outros encargos)."
+                    animIndex={1}
                   >
-                    No azul (sobra um pouco)
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => update({ saldoMensal: 'vermelho' })}
-                    className={`px-3 py-2 rounded-xl text-sm border ${
-                      answers.saldoMensal === 'vermelho'
-                        ? 'bg-rose-500/15 border-rose-500 text-rose-400'
-                        : 'bg-background border-border text-muted-foreground'
-                    }`}
+                    <input
+                      type="text"
+                      value={answers.rendaLiquida}
+                      onChange={(e) => update({ rendaLiquida: e.target.value })}
+                      placeholder="Ex.: R$ 7.850,00"
+                      className="w-full bg-[#F7F3F2] rounded-2xl px-5 py-4 text-sm font-medium outline-none placeholder:text-gray-400 focus:ring-2 focus:ring-black/5 transition-all"
+                    />
+                  </InputCard>
+
+                  <InputCard
+                    title="3 maiores custos fixos"
+                    description="Informe seus principais gastos mensais recorrentes."
+                    animIndex={2}
                   >
-                    No vermelho (falta ou aperta)
-                  </button>
+                    <textarea
+                      value={answers.custosFixos}
+                      onChange={(e) => update({ custosFixos: e.target.value })}
+                      rows={2}
+                      placeholder="Ex.: Aluguel (R$ 1.500), Internet (R$ 120), Plano de Saúde (R$ 450), Academia (R$ 100)"
+                      className="w-full bg-[#F7F3F2] rounded-2xl px-5 py-4 text-sm font-medium outline-none placeholder:text-gray-400 focus:ring-2 focus:ring-black/5 transition-all resize-none"
+                    />
+                  </InputCard>
+                </>
+              )}
+
+              {step === 2 && (
+                <>
+                  <InputCard
+                    title="Categoria que mais estoura no variável"
+                    description="Liste todas as suas pendências atuais para que possamos traçar uma estratégia de quitação."
+                    animIndex={1}
+                  >
+                    <textarea
+                      value={answers.categoriaVariavel}
+                      onChange={(e) => update({ categoriaVariavel: e.target.value })}
+                      rows={2}
+                      className="w-full bg-[#F7F3F2] rounded-2xl px-5 py-4 text-sm font-medium outline-none placeholder:text-gray-400 focus:ring-2 focus:ring-black/5 transition-all resize-none"
+                    />
+                  </InputCard>
+
+                  <motion.div {...anim(2)} className="space-y-4 pt-2">
+                    <h3 className="text-[13px] font-bold uppercase tracking-wide text-gray-900">
+                      Normalmente o mês fecha
+                    </h3>
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-5">
+                      <button
+                        type="button"
+                        onClick={() => update({ saldoMensal: 'azul' })}
+                        className={`flex items-center justify-between p-6 rounded-[2rem] transition-all border ${answers.saldoMensal === 'azul'
+                          ? 'bg-white border-black shadow-[0_8px_30px_rgb(0,0,0,0.08)]'
+                          : 'bg-white border-transparent hover:bg-gray-50 shadow-[0_8px_30px_rgb(0,0,0,0.04)]'
+                          }`}
+                      >
+                        <div className="text-left">
+                          <span className="block font-bold text-gray-900 text-sm mb-1">No azul</span>
+                          <span className="block text-xs text-gray-500">(sobra um pouco)</span>
+                        </div>
+                        <div className={`w-[22px] h-[22px] rounded-full border-2 flex items-center justify-center ${answers.saldoMensal === 'azul' ? 'border-black' : 'border-gray-300'}`}>
+                          {answers.saldoMensal === 'azul' && <div className="w-2.5 h-2.5 bg-black rounded-full" />}
+                        </div>
+                      </button>
+
+                      <button
+                        type="button"
+                        onClick={() => update({ saldoMensal: 'vermelho' })}
+                        className={`flex items-center justify-between p-6 rounded-[2rem] transition-all border ${answers.saldoMensal === 'vermelho'
+                          ? 'bg-white border-black shadow-[0_8px_30px_rgb(0,0,0,0.08)]'
+                          : 'bg-white border-transparent hover:bg-gray-50 shadow-[0_8px_30px_rgb(0,0,0,0.04)]'
+                          }`}
+                      >
+                        <div className="text-left">
+                          <span className="block font-bold text-gray-900 text-sm mb-1">No vermelho</span>
+                          <span className="block text-xs text-gray-500">(falta ou aperta)</span>
+                        </div>
+                        <div className={`w-[22px] h-[22px] rounded-full border-2 flex items-center justify-center ${answers.saldoMensal === 'vermelho' ? 'border-black' : 'border-gray-300'}`}>
+                          {answers.saldoMensal === 'vermelho' && <div className="w-2.5 h-2.5 bg-black rounded-full" />}
+                        </div>
+                      </button>
+                    </div>
+                  </motion.div>
+                </>
+              )}
+
+              {step === 3 && (
+                <>
+                  <InputCard
+                    title="Dívidas (saldo, parcela, juros, atraso)"
+                    description="Liste todas as suas pendências atuais para que possamos traçar uma estratégia de quitação."
+                    animIndex={1}
+                  >
+                    <textarea
+                      value={answers.mapaDividas}
+                      onChange={(e) => update({ mapaDividas: e.target.value })}
+                      rows={3}
+                      placeholder="Ex.: Cartão X R$ 3.200 (14% a.m., em dia), Empréstimo Y R$ 8.000 (2,5% a.m., 2 parcelas em atraso)..."
+                      className="w-full bg-[#F7F3F2] rounded-2xl px-5 py-4 text-sm font-medium outline-none placeholder:text-gray-400 focus:ring-2 focus:ring-black/5 transition-all resize-none"
+                    />
+                  </InputCard>
+
+                  <InputCard
+                    title="Reserva de emergência (valor e onde está)"
+                    description="Sua rede de segurança para imprevistos. Quanto você tem disponível hoje para liquidez imediata?"
+                    animIndex={2}
+                  >
+                    <textarea
+                      value={answers.reservaEmergencia}
+                      onChange={(e) => update({ reservaEmergencia: e.target.value })}
+                      rows={2}
+                      placeholder="Ex.: R$ 1.500 na poupança do Banco X"
+                      className="w-full bg-[#F7F3F2] rounded-2xl px-5 py-4 text-sm font-medium outline-none placeholder:text-gray-400 focus:ring-2 focus:ring-black/5 transition-all resize-none"
+                    />
+                  </InputCard>
+                </>
+              )}
+
+              {step === 4 && (
+                <div className="space-y-6">
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    <motion.div {...anim(1)} className="bg-white rounded-3xl p-6 sm:p-8 shadow-[0_4px_40px_rgb(0,0,0,0.03)] border border-gray-50 flex flex-col">
+                      <div className="flex items-center justify-between mb-8">
+                        <div className="w-8 h-8 rounded-full bg-gray-100 flex items-center justify-center text-gray-900">
+                          <Gauge size={16} />
+                        </div>
+                        <div className="bg-gray-100 rounded-full px-3 py-1">
+                          <span className="text-[10px] font-bold text-gray-500 uppercase tracking-wider">Curto Prazo</span>
+                        </div>
+                      </div>
+                      <div className="space-y-1.5 mb-6 flex-1">
+                        <h3 className="text-[13px] font-bold uppercase tracking-wide text-gray-900">Objetivos de até 12 meses</h3>
+                        <p className="text-sm text-gray-500 leading-relaxed">Foque em conquistas imediatas, segurança e organização de fluxo de caixa.</p>
+                      </div>
+                      <textarea
+                        value={answers.objetivosCurto}
+                        onChange={(e) => update({ objetivosCurto: e.target.value })}
+                        rows={3}
+                        placeholder="Ex.: Sair do cheque especial, montar reserva de R$ 3.000, quitar cartão..."
+                        className="w-full bg-[#F7F3F2] rounded-2xl px-5 py-4 text-sm font-medium outline-none placeholder:text-gray-400 focus:ring-2 focus:ring-black/5 transition-all resize-none"
+                      />
+                    </motion.div>
+
+                    <motion.div {...anim(2)} className="bg-white rounded-3xl p-6 sm:p-8 shadow-[0_4px_40px_rgb(0,0,0,0.03)] border border-gray-50 flex flex-col">
+                      <div className="flex items-center justify-between mb-8">
+                        <div className="w-8 h-8 rounded-full bg-gray-100 flex items-center justify-center text-gray-900">
+                          <Boxes size={16} />
+                        </div>
+                        <div className="bg-gray-100 rounded-full px-3 py-1">
+                          <span className="text-[10px] font-bold text-gray-500 uppercase tracking-wider">Médio Prazo</span>
+                        </div>
+                      </div>
+                      <div className="space-y-1.5 mb-6 flex-1">
+                        <h3 className="text-[13px] font-bold uppercase tracking-wide text-gray-900">Objetivos de 2 a 5 anos</h3>
+                        <p className="text-sm text-gray-500 leading-relaxed">Planeje marcos significativos que exigem aportes consistentes e estratégia.</p>
+                      </div>
+                      <textarea
+                        value={answers.objetivosLongo}
+                        onChange={(e) => update({ objetivosLongo: e.target.value })}
+                        rows={3}
+                        placeholder="Ex.: Dar entrada em um imóvel, fazer uma viagem grande, trocar de carro..."
+                        className="w-full bg-[#F7F3F2] rounded-2xl px-5 py-4 text-sm font-medium outline-none placeholder:text-gray-400 focus:ring-2 focus:ring-black/5 transition-all resize-none"
+                      />
+                    </motion.div>
+                  </div>
+
+                  <motion.div {...anim(3)} className="bg-white rounded-3xl p-6 sm:p-8 shadow-[0_4px_40px_rgb(0,0,0,0.03)] border border-gray-50 relative overflow-hidden">
+                    <div className="relative z-10 space-y-1">
+                      <p className="text-[13px] sm:text-sm font-bold text-gray-900">&quot;A clareza é a base de toda riqueza duradoura.&quot;</p>
+                      <p className="text-[13px] sm:text-sm text-gray-500 max-w-md">Definir seus prazos permite que nosso motor de inteligência otimize a liquidez dos seus ativos.</p>
+                    </div>
+                    <Sparkles className="absolute bottom-6 right-6 text-gray-100" size={64} strokeWidth={1} />
+                  </motion.div>
                 </div>
-              </motion.div>
-            </>
-          )}
+              )}
 
-          {step === 3 && (
-            <>
-              <motion.div {...anim(1)} className="space-y-2">
-                <label className="text-xs font-semibold uppercase tracking-widest text-muted-foreground">
-                  Dívidas (saldo, parcela, juros, atraso)
-                </label>
-                <textarea
-                  value={answers.mapaDividas}
-                  onChange={(e) => update({ mapaDividas: e.target.value })}
-                  rows={3}
-                  placeholder="Ex.: Cartão X R$ 3.200 (14% a.m., em dia), Empréstimo Y R$ 8.000 (2,5% a.m., 2 parcelas em atraso)..."
-                  className="w-full px-3 py-2.5 rounded-xl border border-border bg-background outline-none text-sm resize-none"
-                />
-              </motion.div>
-              <motion.div {...anim(2)} className="space-y-2">
-                <label className="text-xs font-semibold uppercase tracking-widest text-muted-foreground">
-                  Reserva de emergência (valor e onde está)
-                </label>
-                <textarea
-                  value={answers.reservaEmergencia}
-                  onChange={(e) => update({ reservaEmergencia: e.target.value })}
-                  rows={3}
-                  placeholder="Ex.: R$ 1.500 na poupança do Banco X"
-                  className="w-full px-3 py-2.5 rounded-xl border border-border bg-background outline-none text-sm resize-none"
-                />
-              </motion.div>
-            </>
-          )}
+              {step === 5 && (
+                <div className="space-y-6">
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    <motion.div {...anim(1)} className="bg-white rounded-3xl p-6 sm:p-8 shadow-[0_4px_40px_rgb(0,0,0,0.03)] border border-gray-50 flex flex-col">
+                      <div className="flex items-center gap-3 mb-4">
+                        <div className="w-8 h-8 rounded-full bg-black flex items-center justify-center text-white shrink-0">
+                          <TrendingUp size={16} />
+                        </div>
+                        <h3 className="text-[13px] sm:text-sm font-bold uppercase tracking-wide text-gray-900">Como você reage a quedas e riscos?</h3>
+                      </div>
+                      <p className="text-sm text-gray-500 leading-relaxed mb-6">Sua reação emocional durante a volatilidade do mercado define sua estratégia de longo prazo.</p>
+                      <div className="flex flex-col gap-3 flex-1 justify-center">
+                        {[
+                          { id: 'baixo', label: 'Prefiro segurança', icon: Shield },
+                          { id: 'moderado', label: 'Equilíbrio', icon: Scale },
+                          { id: 'alto', label: 'Aceito mais risco', icon: Rocket },
+                        ].map((risk) => {
+                          const Icon = risk.icon;
+                          const isSelected = answers.perfilRisco === risk.id;
+                          return (
+                            <button
+                              key={risk.id}
+                              type="button"
+                              onClick={() => update({ perfilRisco: risk.id as any })}
+                              className={`flex items-center gap-3 px-5 py-3.5 rounded-full text-sm font-medium transition-all w-3/4 sm:w-full ${isSelected
+                                ? 'bg-black text-white shadow-md'
+                                : 'bg-[#F4F4F5] text-gray-700 hover:bg-[#EAEAEB]'
+                                }`}
+                            >
+                              <Icon size={18} className={isSelected ? 'text-white' : 'text-gray-500'} />
+                              {risk.label}
+                            </button>
+                          );
+                        })}
+                      </div>
+                    </motion.div>
 
-          {step === 4 && (
-            <>
-              <motion.div {...anim(1)} className="space-y-2">
-                <label className="text-xs font-semibold uppercase tracking-widest text-muted-foreground">
-                  Objetivos de até 12 meses
-                </label>
-                <textarea
-                  value={answers.objetivosCurto}
-                  onChange={(e) => update({ objetivosCurto: e.target.value })}
-                  rows={3}
-                  placeholder="Ex.: Sair do cheque especial, montar reserva de R$ 3.000, quitar cartão..."
-                  className="w-full px-3 py-2.5 rounded-xl border border-border bg-background outline-none text-sm resize-none"
-                />
-              </motion.div>
-              <motion.div {...anim(2)} className="space-y-2">
-                <label className="text-xs font-semibold uppercase tracking-widest text-muted-foreground">
-                  Objetivos de 2 a 5 anos
-                </label>
-                <textarea
-                  value={answers.objetivosLongo}
-                  onChange={(e) => update({ objetivosLongo: e.target.value })}
-                  rows={3}
-                  placeholder="Ex.: Dar entrada em um imóvel, fazer uma viagem grande, trocar de carro..."
-                  className="w-full px-3 py-2.5 rounded-xl border border-border bg-background outline-none text-sm resize-none"
-                />
-              </motion.div>
-            </>
-          )}
+                    <motion.div {...anim(2)} className="bg-white rounded-3xl p-6 sm:p-8 shadow-[0_4px_40px_rgb(0,0,0,0.03)] border border-gray-50 flex flex-col">
+                      <div className="flex items-center gap-3 mb-4">
+                        <div className="w-8 h-8 rounded-full bg-red-100 flex items-center justify-center text-red-800 shrink-0">
+                          <FileSignature size={16} />
+                        </div>
+                        <h3 className="text-[13px] sm:text-sm font-bold text-gray-900">Grandes gastos futuros</h3>
+                      </div>
+                      <p className="text-sm text-gray-500 leading-relaxed mb-6">Liste gastos grandes previstos para os próximos 24 meses.</p>
+                      <textarea
+                        value={answers.bombasProgramadas}
+                        onChange={(e) => update({ bombasProgramadas: e.target.value })}
+                        rows={3}
+                        placeholder="Ex.: casamento em 8 meses, reforma em 1 ano, chegada de filho..."
+                        className="w-full bg-[#F4F4F5] rounded-2xl px-5 py-4 text-sm font-medium outline-none placeholder:text-gray-400 focus:ring-2 focus:ring-black/5 transition-all resize-none mb-4"
+                      />
+                      <div className="bg-[#FAF5F3] rounded-2xl p-4 flex gap-3">
+                        <Info size={18} className="text-gray-500 shrink-0 mt-0.5" />
+                        <p className="text-xs text-gray-600 leading-relaxed font-medium">Projetar essas despesas evita que você precise liquidar investimentos em momentos desfavoráveis.</p>
+                      </div>
+                    </motion.div>
+                  </div>
 
-          {step === 5 && (
-            <>
-              <motion.div {...anim(1)} className="space-y-2">
-                <label className="text-xs font-semibold uppercase tracking-widest text-muted-foreground">
-                  Como você reage a quedas e riscos?
-                </label>
-                <div className="grid grid-cols-3 gap-2">
-                  <button
-                    type="button"
-                    onClick={() => update({ perfilRisco: 'baixo' })}
-                    className={`px-3 py-2 rounded-xl text-xs border ${
-                      answers.perfilRisco === 'baixo'
-                        ? 'bg-emerald-500/15 border-emerald-500 text-emerald-400'
-                        : 'bg-background border-border text-muted-foreground'
-                    }`}
-                  >
-                    Prefiro segurança
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => update({ perfilRisco: 'moderado' })}
-                    className={`px-3 py-2 rounded-xl text-xs border ${
-                      answers.perfilRisco === 'moderado'
-                        ? 'bg-amber-500/15 border-amber-500 text-amber-400'
-                        : 'bg-background border-border text-muted-foreground'
-                    }`}
-                  >
-                    Equilíbrio
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => update({ perfilRisco: 'alto' })}
-                    className={`px-3 py-2 rounded-xl text-xs border ${
-                      answers.perfilRisco === 'alto'
-                        ? 'bg-rose-500/15 border-rose-500 text-rose-400'
-                        : 'bg-background border-border text-muted-foreground'
-                    }`}
-                  >
-                    Aceito mais risco
-                  </button>
+                  <motion.div {...anim(3)} className="bg-white rounded-3xl p-6 shadow-[0_4px_40px_rgb(0,0,0,0.03)] border border-gray-50 flex items-center gap-5">
+                    <div className="w-12 h-12 rounded-2xl bg-gray-50 flex items-center justify-center text-gray-900 shrink-0 border border-gray-100">
+                      <BarChart2 size={24} />
+                    </div>
+                    <div>
+                      <span className="block text-[10px] font-bold text-gray-400 uppercase tracking-widest mb-1">Recomendação automatizada</span>
+                      <span className="block text-sm font-medium text-gray-900">Analisando seu perfil em tempo real.</span>
+                    </div>
+                  </motion.div>
                 </div>
-              </motion.div>
-              <motion.div {...anim(2)} className="space-y-2">
-                <label className="text-xs font-semibold uppercase tracking-widest text-muted-foreground">
-                  Bombas programadas (gastos grandes previstos)
-                </label>
-                <textarea
-                  value={answers.bombasProgramadas}
-                  onChange={(e) => update({ bombasProgramadas: e.target.value })}
-                  rows={3}
-                  placeholder="Ex.: casamento em 8 meses, reforma em 1 ano, chegada de filho..."
-                  className="w-full px-3 py-2.5 rounded-xl border border-border bg-background outline-none text-sm resize-none"
-                />
-              </motion.div>
-            </>
-          )}
+              )}
+            </motion.div>
+          </AnimatePresence>
         </div>
 
         {/* Navigation */}
-        <div className="flex items-center justify-between pt-2">
+        <motion.div {...anim(3)} className="flex items-center justify-between mt-12 pb-16">
           <button
             type="button"
             onClick={handlePrev}
-            disabled={step === 1 || submitting}
-            className="inline-flex items-center gap-1 text-xs text-muted-foreground hover:text-foreground disabled:opacity-50"
+            className={`inline-flex items-center gap-2 text-[13px] font-medium text-gray-500 hover:text-black transition-colors ${step === 1 || submitting ? 'invisible' : ''
+              }`}
           >
-            <ArrowLeft size={14} />
-            Voltar
+            <ArrowLeft size={16} />
+            VOLTAR
           </button>
 
           <button
             type="button"
             onClick={handleNext}
             disabled={submitting}
-            className="inline-flex items-center gap-2 rounded-xl bg-primary text-primary-foreground px-4 py-2 text-sm font-semibold shadow-sm hover:bg-primary/90 disabled:opacity-60"
+            className="inline-flex items-center gap-3 rounded-full bg-black text-white px-8 py-3 text-sm font-semibold hover:bg-gray-800 disabled:opacity-70 transition-all active:scale-[0.98]"
           >
-            {step < steps.length ? 'Continuar' : 'Ver meu diagnóstico'}
+            {step < steps.length ? 'CONTINUAR' : 'VER MEU DIAGNÓSTICO'}
             <ArrowRight size={16} />
           </button>
-        </div>
-      </motion.div>
+        </motion.div>
+      </main>
     </div>
   );
 };
 
 export default OnboardingPage;
-
