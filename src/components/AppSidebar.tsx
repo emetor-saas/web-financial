@@ -2,7 +2,7 @@ import { useLocation, useNavigate, Link } from 'react-router-dom';
 import { useAuth } from '@/context/AuthContext';
 import {
   LayoutDashboard, Activity, ShieldCheck, CreditCard, Target,
-  BrainCircuit, User, Users, Settings, LogOut, ChevronLeft, ChevronRight, Sparkles, FileUp, Crown, Lock,
+  BrainCircuit, User, Users, Settings, LogOut, ChevronLeft, ChevronRight, Sparkles, FileUp, Crown, Lock, ChevronUp,
 } from 'lucide-react';
 import { useState } from 'react';
 import { cn } from '@/lib/utils';
@@ -29,9 +29,10 @@ export const AppSidebar = () => {
   const location = useLocation();
   const navigate = useNavigate();
   const [collapsed, setCollapsed] = useState(false);
+  const [showProfileMenu, setShowProfileMenu] = useState(false);
 
   const filteredItems = NAV_ITEMS.filter((item) => {
-    if (!profileType || !item.roles.includes(profileType)) return false;
+    if (!profileType || !(item.roles as ReadonlyArray<string>).includes(profileType)) return false;
     if ('requiresMultiTenant' in item && item.requiresMultiTenant) {
       const n = user?.household?.tenantMemberCount;
       if (n == null || n < 2) return false;
@@ -42,16 +43,22 @@ export const AppSidebar = () => {
 
   return (
     <aside className={cn(
-      "h-screen sticky top-0 flex flex-col bg-card/95 backdrop-blur-xl border-r border-border transition-all duration-300",
-      collapsed ? "w-16" : "w-64"
+      "h-screen sticky top-0 flex flex-col bg-card border-r border-border transition-all duration-300",
+      collapsed ? "w-16" : "w-56"
     )}>
-      {/* Logo */}
-      <div className="p-4 flex items-center justify-between">
-        <Link to="/app/dashboard" className="flex items-center gap-3 transition-opacity duration-200 hover:opacity-90">
-          <div className="w-9 h-9 bg-primary rounded-xl flex items-center justify-center flex-shrink-0 shadow-glow-primary">
-            <BrainCircuit size={18} className="text-primary-foreground" />
-          </div>
-          {!collapsed && <span className="font-display font-bold text-lg text-foreground tracking-tight">Clareza</span>}
+      <div className="px-4 py-5 flex items-center justify-between border-b border-border">
+        <Link to="/app/dashboard" className="flex flex-col gap-0 transition-opacity duration-200 hover:opacity-80">
+          {!collapsed && (
+            <>
+              <span className="font-display font-black text-base text-foreground tracking-tight leading-none">CLAREZA</span>
+              <span className="text-[9px] font-semibold uppercase tracking-widest text-muted-foreground leading-tight mt-0.5">Planejamento Financeiro</span>
+            </>
+          )}
+          {collapsed && (
+            <div className="w-8 h-8 bg-primary rounded-lg flex items-center justify-center">
+              <BrainCircuit size={16} className="text-primary-foreground" />
+            </div>
+          )}
         </Link>
         <button onClick={() => setCollapsed(!collapsed)} className="p-1.5 text-muted-foreground hover:text-foreground hover:bg-accent rounded-lg transition-all duration-200">
           {collapsed ? <ChevronRight size={16} /> : <ChevronLeft size={16} />}
@@ -93,33 +100,78 @@ export const AppSidebar = () => {
               key={item.path}
               to={item.path}
               className={cn(
-                "flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium transition-all duration-200",
+                "flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-all duration-200",
                 isActive
-                  ? "bg-primary/10 text-primary border border-primary/20"
-                  : "text-muted-foreground hover:bg-accent hover:text-foreground border border-transparent"
+                  ? "bg-accent text-foreground font-semibold"
+                  : "text-muted-foreground hover:bg-accent hover:text-foreground"
               )}
             >
-              <item.icon size={18} className="flex-shrink-0" />
+              <item.icon size={17} className="flex-shrink-0" />
               {!collapsed && <span>{item.label}</span>}
             </Link>
           );
         })}
       </nav>
 
-      {/* User + Logout */}
-      <div className="p-3 border-t border-border space-y-2">
+      <div className="p-3 border-t border-border space-y-3">
         {!collapsed && (
-          <div className="px-3 py-2">
-            <p className="text-xs text-muted-foreground uppercase tracking-wider">Logado como</p>
-            <p className="text-sm font-medium text-foreground truncate font-mono-nums">{userName}</p>
+          <div className="relative">
+            <button
+              type="button"
+              onClick={() => setShowProfileMenu((v) => !v)}
+              className="w-full flex items-center gap-2.5 px-2 py-1.5 rounded-lg hover:bg-accent transition-all duration-200 group"
+            >
+              <div className="w-7 h-7 rounded-full bg-muted flex items-center justify-center text-xs font-bold text-foreground shrink-0">
+                {userName?.charAt(0).toUpperCase() ?? 'U'}
+              </div>
+              <div className="min-w-0 flex-1 text-left">
+                <p className="text-[10px] text-muted-foreground uppercase tracking-wider leading-none">Logado como</p>
+                <p className="text-xs font-semibold text-foreground truncate mt-0.5">{userName}</p>
+              </div>
+              <ChevronUp
+                size={14}
+                className={cn(
+                  'text-muted-foreground shrink-0 transition-transform duration-200',
+                  showProfileMenu ? 'rotate-180' : 'rotate-0'
+                )}
+              />
+            </button>
+
+            {showProfileMenu && (
+              <>
+                <div className="fixed inset-0 z-40" onClick={() => setShowProfileMenu(false)} />
+                <div className="absolute bottom-full left-0 right-0 mb-2 bg-popover border border-border rounded-xl shadow-premium z-50 py-1 overflow-hidden">
+                  <p className="px-3 py-2 text-[10px] text-muted-foreground font-bold uppercase tracking-wider">Conta</p>
+                  <Link
+                    to="/app/perfil"
+                    onClick={() => setShowProfileMenu(false)}
+                    className="flex items-center gap-2 w-full px-3 py-2.5 text-sm text-foreground hover:bg-accent transition-colors"
+                  >
+                    <User size={15} className="text-muted-foreground" />
+                    Meu perfil
+                  </Link>
+                  <button
+                    type="button"
+                    onClick={() => { setShowProfileMenu(false); logout(); navigate('/login'); }}
+                    className="flex items-center gap-2 w-full px-3 py-2.5 text-sm text-foreground hover:bg-accent transition-colors"
+                  >
+                    <LogOut size={15} className="text-muted-foreground" />
+                    Sair
+                  </button>
+                </div>
+              </>
+            )}
           </div>
         )}
+
         <button
-          onClick={() => { logout(); navigate('/login'); }}
-          className="flex items-center gap-3 px-3 py-2 w-full text-muted-foreground hover:text-destructive hover:bg-accent rounded-xl transition-all duration-200 text-sm"
+          onClick={() => { }}
+          className={cn(
+            'w-full flex items-center justify-center gap-2 px-4 py-2.5 bg-primary text-primary-foreground rounded-lg text-sm font-bold hover:bg-primary/90 transition-all duration-200',
+            collapsed && 'px-2'
+          )}
         >
-          <LogOut size={18} className="flex-shrink-0" />
-          {!collapsed && <span>Sair</span>}
+          {!collapsed ? 'Lançar Transação' : <LogOut size={16} />}
         </button>
       </div>
     </aside>
