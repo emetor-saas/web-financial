@@ -7,6 +7,7 @@ export interface Alert {
   severity: 'low' | 'medium' | 'high' | 'critical';
   type: 'info' | 'warning' | 'danger';
   horizon: 'short' | 'medium' | 'long';
+  category?: 'spending' | 'goal' | 'reserve' | 'debt' | 'balance' | 'general';
 }
 
 export interface AlertsResponse {

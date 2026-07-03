@@ -8,6 +8,7 @@ import { formatCurrency, getScoreColor, getScoreLabel } from '@/utils/formatters
 import { Link } from 'react-router-dom';
 import { useQuery } from '@tanstack/react-query';
 import { fetchDashboardStats } from '@/services/dashboard';
+import { fetchTransactionsForPeriod, type TransactionRow } from '@/services/transactions';
 import { apiFetch } from '@/lib/apiClient';
 import { buildClientNarrative } from '@/lib/clientNarrative';
 import { ThemeSwitcher } from '@/components/ThemeSwitcher';
@@ -15,7 +16,7 @@ import { NotificationsPanel } from '@/components/NotificationsPanel';
 import { fetchInAppAlerts } from '@/services/notifications';
 import { useAuth } from '@/context/AuthContext';
 import { useState } from 'react';
-import { Bell } from 'lucide-react';
+import { Bell, ListTree } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { useIsMobile } from '@/hooks/use-mobile';
 import type { Alert } from '@/types';
@@ -38,14 +39,22 @@ type DiagnosticPayload = {
   } | null;
 };
 
-const monthLabel = new Date().toLocaleDateString('pt-BR', { month: 'short', year: 'numeric' })
-  .replace('.', '')
-  .replace(/^\w/, (c) => c.toUpperCase());
+const monthOptions = Array.from({ length: 12 }, (_, index) => index + 1);
 
 const DashboardPage = () => {
   const { user, isAuthenticated } = useAuth();
   const isMobile = useIsMobile();
   const [showNotifications, setShowNotifications] = useState(false);
+  const now = new Date();
+  const [periodMonth, setPeriodMonth] = useState(now.getMonth() + 1);
+  const [periodYear, setPeriodYear] = useState(now.getFullYear());
+
+  const monthLabel = new Date(periodYear, periodMonth - 1, 1)
+    .toLocaleDateString('pt-BR', { month: 'short', year: 'numeric' })
+    .replace('.', '')
+    .replace(/^\w/, (c) => c.toUpperCase());
+
+  const yearOptions = [periodYear - 1, periodYear, periodYear + 1];
 
   const canLoadNotifications = isAuthenticated && Boolean(user?.householdId);
   const { data: notificationsFromApi } = useQuery({
@@ -61,8 +70,8 @@ const DashboardPage = () => {
 
 
   const { data: stats } = useQuery({
-    queryKey: ['dashboard-stats'],
-    queryFn: fetchDashboardStats,
+    queryKey: ['dashboard-stats', periodMonth, periodYear],
+    queryFn: () => fetchDashboardStats({ month: periodMonth, year: periodYear }),
   });
 
   const { data: diagnostic } = useQuery({
@@ -73,7 +82,22 @@ const DashboardPage = () => {
   const totalIncome = stats?.totalIncome ?? 0;
   const totalExpenses = stats?.totalExpenses ?? 0;
   const balance = stats?.balance ?? 0;
+  const dataSource = stats?.dataSource ?? 'none';
+  const usesTransactions = dataSource === 'transactions';
+  const periodHasTransactions = stats?.periodHasTransactions === true;
   const estimatedFromDiagnostic = stats?.estimatedFromDiagnostic === true;
+
+  const { data: periodTransactions, isLoading: loadingTransactions } = useQuery({
+    queryKey: ['dashboard-period-transactions', periodMonth, periodYear],
+    queryFn: () => fetchTransactionsForPeriod({ month: periodMonth, year: periodYear, limit: 500 }),
+    enabled: usesTransactions,
+  });
+
+  const incomeRows = (periodTransactions ?? []).filter((row) => row.type === 'INCOME');
+  const expenseRows = (periodTransactions ?? []).filter((row) => row.type === 'EXPENSE');
+  const transferRows = (periodTransactions ?? []).filter((row) => row.type === 'TRANSFER');
+  const sumIncomeFromRows = incomeRows.reduce((sum, row) => sum + Math.abs(row.amount), 0);
+  const sumExpenseFromRows = expenseRows.reduce((sum, row) => sum + Math.abs(row.amount), 0);
   const auraScore = diagnostic?.auraScore?.score ?? 0;
   const riskBand = diagnostic?.auraScore?.band?.replace('_', ' ') ?? 'Aguardando dados';
   const narrative = buildClientNarrative(diagnostic ?? {}, 'dashboard');
@@ -104,9 +128,37 @@ const DashboardPage = () => {
   return (
     <div className="flex flex-col min-h-full">
       <div className="flex items-center justify-between px-6 sm:px-8 py-4 border-b border-border bg-background sticky top-0 z-10">
-        <h1 className="font-bold text-lg tracking-tight text-foreground">
-          Resumo / <span className="text-muted-foreground font-normal">{monthLabel}</span>
-        </h1>
+        <div className="flex flex-col sm:flex-row sm:items-center gap-2 sm:gap-4">
+          <h1 className="font-bold text-lg tracking-tight text-foreground">
+            Resumo / <span className="text-muted-foreground font-normal">{monthLabel}</span>
+          </h1>
+          <div className="flex items-center gap-2">
+            <select
+              value={periodMonth}
+              onChange={(e) => setPeriodMonth(Number(e.target.value))}
+              className="text-xs rounded-lg border border-border bg-card px-2 py-1.5"
+              aria-label="Mês do resumo"
+            >
+              {monthOptions.map((month) => (
+                <option key={month} value={month}>
+                  {new Date(periodYear, month - 1, 1).toLocaleDateString('pt-BR', { month: 'long' })}
+                </option>
+              ))}
+            </select>
+            <select
+              value={periodYear}
+              onChange={(e) => setPeriodYear(Number(e.target.value))}
+              className="text-xs rounded-lg border border-border bg-card px-2 py-1.5"
+              aria-label="Ano do resumo"
+            >
+              {yearOptions.map((year) => (
+                <option key={year} value={year}>
+                  {year}
+                </option>
+              ))}
+            </select>
+          </div>
+        </div>
         <div className="flex items-center gap-3">
           <div className="flex flex-col items-end leading-tight">
             <span className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground">Risco</span>
@@ -156,14 +208,27 @@ const DashboardPage = () => {
 
         {estimatedFromDiagnostic && (
           <motion.p {...anim(0)} className="text-xs text-muted-foreground border-b border-border pb-4">
-            Dados estimados do diagnóstico inicial: renda, gastos e sobra estão vindo do onboarding até você importar extratos ou registrar movimentações reais.
+            Valores do diagnóstico inicial (antes de importar extratos). Importe OFX/CSV para ver dados reais.
+          </motion.p>
+        )}
+
+        {usesTransactions && !periodHasTransactions && (
+          <motion.p {...anim(0)} className="text-xs text-amber-700 dark:text-amber-400 border-b border-amber-500/30 pb-4">
+            Você já importou extratos, mas não há lançamentos em {monthLabel.toLowerCase()}. Selecione o mês do
+            extrato acima.
+          </motion.p>
+        )}
+
+        {usesTransactions && periodHasTransactions && (
+          <motion.p {...anim(0)} className="text-xs text-emerald-700 dark:text-emerald-400 border-b border-emerald-500/30 pb-4">
+            Renda e gastos calculados a partir dos lançamentos importados ({monthLabel.toLowerCase()}).
           </motion.p>
         )}
 
         <motion.div {...anim(0)} className="grid grid-cols-2 lg:grid-cols-4 items-start gap-x-8 gap-y-4">
-          <KpiItem label="Renda Mensal" value={formatCurrency(totalIncome)} delta="+2,4%" positive />
-          <KpiItem label="Gastos Totais" value={formatCurrency(totalExpenses)} delta="-1,2%" positive={false} />
-          <KpiItem label="Sobra Real" value={formatCurrency(balance)} delta="+15,4%" positive />
+          <KpiItem label="Renda Mensal" value={formatCurrency(totalIncome)} />
+          <KpiItem label="Gastos Totais" value={formatCurrency(totalExpenses)} />
+          <KpiItem label="Sobra Real" value={formatCurrency(balance)} />
           <div className="flex flex-col items-start lg:items-end gap-0.5">
             <span className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground">Score Clareza</span>
             <span className={`text-5xl font-black font-mono-nums leading-none ${getScoreColor(auraScore)}`}>
@@ -172,6 +237,97 @@ const DashboardPage = () => {
             <span className="text-xs text-muted-foreground">{getScoreLabel(auraScore)}</span>
           </div>
         </motion.div>
+
+        {usesTransactions && (
+          <motion.div {...anim(1)} className="card-solid rounded-2xl p-5 space-y-4">
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+              <div className="flex items-center gap-2">
+                <ListTree size={18} className="text-primary" />
+                <div>
+                  <h3 className="font-semibold text-sm">Lançamentos que compõem o resumo</h3>
+                  <p className="text-xs text-muted-foreground">
+                    {monthLabel} — {incomeRows.length} receita(s), {expenseRows.length} despesa(s)
+                    {transferRows.length > 0 ? `, ${transferRows.length} transferência(s) (fora dos totais)` : ''}
+                  </p>
+                </div>
+              </div>
+              <div className="text-xs text-muted-foreground font-mono space-y-0.5 sm:text-right">
+                <div>Σ receitas: {formatCurrency(sumIncomeFromRows)}</div>
+                <div>Σ despesas: {formatCurrency(sumExpenseFromRows)}</div>
+              </div>
+            </div>
+
+            {loadingTransactions ? (
+              <p className="text-sm text-muted-foreground">Carregando lançamentos...</p>
+            ) : (periodTransactions ?? []).length === 0 ? (
+              <p className="text-sm text-muted-foreground">Nenhum lançamento confirmado neste período.</p>
+            ) : (
+              <div className="overflow-x-auto rounded-xl border border-border">
+                <table className="w-full text-xs sm:text-sm">
+                  <thead>
+                    <tr className="border-b border-border bg-muted/40">
+                      <th className="text-left py-2 px-2">Data</th>
+                      <th className="text-left py-2 px-2">Descrição</th>
+                      <th className="text-left py-2 px-2">Categoria</th>
+                      <th className="text-left py-2 px-2">Tipo</th>
+                      <th className="text-right py-2 px-2">Valor</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {(periodTransactions ?? []).map((row: TransactionRow) => (
+                      <tr key={row.id} className="border-b border-border/50 hover:bg-accent/20">
+                        <td className="py-2 px-2 whitespace-nowrap text-muted-foreground">
+                          {new Date(row.date).toLocaleDateString('pt-BR')}
+                        </td>
+                        <td className="py-2 px-2 max-w-[200px] truncate" title={row.description}>
+                          {row.description}
+                          {row.importJobId && (
+                            <span className="ml-1 text-[10px] text-muted-foreground">(import)</span>
+                          )}
+                        </td>
+                        <td className="py-2 px-2 text-muted-foreground">
+                          {row.category?.name ?? '—'}
+                        </td>
+                        <td className="py-2 px-2">
+                          <span
+                            className={cn(
+                              'rounded-full px-2 py-0.5 text-[10px] font-semibold',
+                              row.type === 'INCOME' && 'bg-emerald-500/15 text-emerald-600',
+                              row.type === 'EXPENSE' && 'bg-red-500/15 text-red-600',
+                              row.type === 'TRANSFER' && 'bg-blue-500/15 text-blue-600',
+                            )}
+                          >
+                            {row.type === 'INCOME' ? 'Receita' : row.type === 'EXPENSE' ? 'Despesa' : 'Transf.'}
+                          </span>
+                        </td>
+                        <td
+                          className={cn(
+                            'py-2 px-2 text-right font-mono font-medium',
+                            row.type === 'INCOME' && 'text-emerald-600',
+                            row.type === 'EXPENSE' && 'text-red-600',
+                            row.type === 'TRANSFER' && 'text-blue-600',
+                          )}
+                        >
+                          {formatCurrency(Math.abs(row.amount))}
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                  <tfoot>
+                    <tr className="bg-muted/30 font-semibold">
+                      <td colSpan={4} className="py-2 px-2 text-right text-muted-foreground">
+                        Totais (receitas − despesas)
+                      </td>
+                      <td className="py-2 px-2 text-right font-mono">
+                        {formatCurrency(sumIncomeFromRows - sumExpenseFromRows)}
+                      </td>
+                    </tr>
+                  </tfoot>
+                </table>
+              </div>
+            )}
+          </motion.div>
+        )}
 
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
 
@@ -217,7 +373,7 @@ const DashboardPage = () => {
                 <div>
                   <span className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground block mb-0.5">Dívida Mapeada</span>
                   <span className="text-sm font-bold font-mono-nums text-foreground">
-                    {formatCurrency(0)}
+                    {formatCurrency(diagnostic?.currentSituation?.totalDebt ?? 0)}
                   </span>
                 </div>
               </div>
@@ -361,11 +517,23 @@ const DashboardPage = () => {
   );
 };
 
-const KpiItem = ({ label, value, delta, positive }: { label: string; value: string; delta: string; positive: boolean }) => (
+const KpiItem = ({
+  label,
+  value,
+  delta,
+  positive,
+}: {
+  label: string;
+  value: string;
+  delta?: string;
+  positive?: boolean;
+}) => (
   <div className="flex flex-col gap-0.5">
     <span className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground">{label}</span>
     <span className="text-2xl sm:text-3xl font-black font-mono-nums text-foreground leading-none">{value}</span>
-    <span className={`text-xs font-semibold ${positive ? 'text-success' : 'text-destructive'}`}>{delta}</span>
+    {delta && (
+      <span className={`text-xs font-semibold ${positive ? 'text-success' : 'text-destructive'}`}>{delta}</span>
+    )}
   </div>
 );
 

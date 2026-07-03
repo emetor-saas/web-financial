@@ -1,10 +1,15 @@
-import { useState, useRef, useEffect } from 'react';
+import { useState, useRef, useEffect, useCallback } from 'react';
 import { Link } from 'react-router-dom';
-import { Sparkles, Send, Loader2, Crown } from 'lucide-react';
+import { Sparkles, Send, Loader2, Crown, Trash2 } from 'lucide-react';
 import { cn } from '@/lib/utils';
-import { askFinancialAssistant } from '@/services/aiAssistant';
+import {
+  askFinancialAssistant,
+  clearAssistantChatHistory,
+  fetchAssistantChatHistory,
+} from '@/services/aiAssistant';
 import { useAuth } from '@/context/AuthContext';
 import { tenantCanUseChat } from '@/lib/billing';
+import { toast } from 'sonner';
 
 type MessageRole = 'user' | 'assistant';
 
@@ -20,7 +25,35 @@ export default function ChatPage() {
   const [messages, setMessages] = useState<Message[]>([]);
   const [input, setInput] = useState('');
   const [isTyping, setIsTyping] = useState(false);
+  const [isLoadingHistory, setIsLoadingHistory] = useState(true);
   const scrollRef = useRef<HTMLDivElement>(null);
+
+  const loadHistory = useCallback(async () => {
+    setIsLoadingHistory(true);
+    try {
+      const rows = await fetchAssistantChatHistory('tenant');
+      setMessages(
+        rows.map((row) => ({
+          id: row.id,
+          role: row.role,
+          content: row.content,
+          timestamp: new Date(row.createdAt),
+        })),
+      );
+    } catch {
+      setMessages([]);
+    } finally {
+      setIsLoadingHistory(false);
+    }
+  }, []);
+
+  useEffect(() => {
+    if (user && tenantCanUseChat(user)) {
+      void loadHistory();
+    } else {
+      setIsLoadingHistory(false);
+    }
+  }, [user, loadHistory]);
 
   useEffect(() => {
     scrollRef.current?.scrollTo({ top: scrollRef.current.scrollHeight, behavior: 'smooth' });
@@ -30,8 +63,9 @@ export default function ChatPage() {
     const text = input.trim();
     if (!text || isTyping) return;
 
+    const optimisticId = crypto.randomUUID();
     const userMsg: Message = {
-      id: crypto.randomUUID(),
+      id: optimisticId,
       role: 'user',
       content: text,
       timestamp: new Date(),
@@ -41,24 +75,43 @@ export default function ChatPage() {
     setIsTyping(true);
     try {
       const response = await askFinancialAssistant({ message: text, mode: 'tenant' });
+      setMessages((prev) =>
+        prev.map((m) => (m.id === optimisticId ? { ...m, id: response.userMessageId ?? m.id } : m)),
+      );
       const assistantMsg: Message = {
-        id: crypto.randomUUID(),
+        id: response.assistantMessageId ?? crypto.randomUUID(),
         role: 'assistant',
         content: response.answer,
         timestamp: new Date(),
       };
       setMessages((prev) => [...prev, assistantMsg]);
-    } catch (error) {
+    } catch (err) {
+      setMessages((prev) => prev.filter((m) => m.id !== optimisticId));
+      const msg = err instanceof Error ? err.message : '';
+      const isQuota =
+        msg.includes('429') || msg.includes('quota') || msg.includes('insufficient_quota');
       const fallback: Message = {
         id: crypto.randomUUID(),
         role: 'assistant',
-        content:
-          'Não consegui falar com o agente financeiro agora. Verifique se a API está em execução em http://localhost:3001 e tente novamente.',
+        content: isQuota
+          ? 'A IA está temporariamente indisponível (limite de créditos da OpenAI). Tente mais tarde ou verifique a configuração da API.'
+          : 'Não consegui falar com a Clareza agora. Verifique se a API está em execução e tente novamente.',
         timestamp: new Date(),
       };
       setMessages((prev) => [...prev, fallback]);
+      toast.error(isQuota ? 'Limite de IA atingido' : 'Erro ao enviar mensagem');
     } finally {
       setIsTyping(false);
+    }
+  };
+
+  const handleClearHistory = async () => {
+    if (isTyping || messages.length === 0) return;
+    try {
+      await clearAssistantChatHistory('tenant');
+      setMessages([]);
+    } catch {
+      /* ignore */
     }
   };
 
@@ -92,29 +145,45 @@ export default function ChatPage() {
 
   return (
     <div className="min-h-[calc(100dvh-8rem)] sm:min-h-[calc(100dvh-10rem)] flex flex-col max-w-3xl mx-auto w-full px-1 sm:px-0">
-      {/* Header */}
       <div className="flex-shrink-0 py-3 sm:py-4 border-b border-border px-1">
-        <div className="flex items-center gap-3">
-          <div className="w-10 h-10 rounded-xl bg-primary/20 border border-primary/20 flex items-center justify-center">
-            <Sparkles size={20} className="text-primary" />
+        <div className="flex items-center justify-between gap-3">
+          <div className="flex items-center gap-3">
+            <div className="w-10 h-10 rounded-xl bg-primary/20 border border-primary/20 flex items-center justify-center">
+              <Sparkles size={20} className="text-primary" />
+            </div>
+            <div>
+              <h1 className="font-display font-semibold text-foreground tracking-tight">
+                Assistente Clareza
+              </h1>
+              <p className="text-xs text-muted-foreground">
+                Análise dos seus dados financeiros + histórico da conversa
+              </p>
+            </div>
           </div>
-          <div>
-            <h1 className="font-display font-semibold text-foreground tracking-tight">
-              Assistente Clareza
-            </h1>
-            <p className="text-xs text-muted-foreground">
-              Dúvidas sobre finanças, metas e diagnóstico
-            </p>
-          </div>
+          {messages.length > 0 && (
+            <button
+              type="button"
+              onClick={handleClearHistory}
+              disabled={isTyping}
+              className="flex items-center gap-1.5 text-xs text-muted-foreground hover:text-foreground px-2 py-1.5 rounded-lg hover:bg-muted/60 transition-colors"
+              title="Limpar histórico"
+            >
+              <Trash2 size={14} />
+              Limpar
+            </button>
+          )}
         </div>
       </div>
 
-      {/* Messages */}
       <div
         ref={scrollRef}
         className="flex-1 overflow-y-auto overflow-x-hidden py-4 sm:py-6 px-1 min-h-0"
       >
-        {messages.length === 0 ? (
+        {isLoadingHistory ? (
+          <div className="flex items-center justify-center h-full min-h-[280px]">
+            <Loader2 size={24} className="text-primary animate-spin" />
+          </div>
+        ) : messages.length === 0 ? (
           <div className="flex flex-col items-center justify-center h-full min-h-[280px] text-center px-4">
             <div className="w-14 h-14 rounded-2xl bg-primary/10 border border-primary/20 flex items-center justify-center mb-4">
               <Sparkles size={28} className="text-primary" />
@@ -123,7 +192,7 @@ export default function ChatPage() {
               Como posso ajudar sua saúde financeira hoje?
             </p>
             <p className="text-sm text-muted-foreground max-w-sm">
-              Pergunte sobre metas, dívidas, diagnóstico ou próximos passos.
+              Pergunte sobre metas, dívidas, diagnóstico ou próximos passos. Suas conversas ficam salvas aqui.
             </p>
             <div className="flex flex-wrap gap-2 mt-6 justify-center">
               {[
@@ -134,9 +203,7 @@ export default function ChatPage() {
                 <button
                   key={suggestion}
                   type="button"
-                  onClick={() => {
-                    setInput(suggestion);
-                  }}
+                  onClick={() => setInput(suggestion)}
                   className="px-3 py-2 rounded-xl text-xs font-medium bg-muted/60 border border-border text-muted-foreground hover:text-foreground hover:bg-accent transition-all duration-200"
                 >
                   {suggestion}
@@ -149,10 +216,7 @@ export default function ChatPage() {
             {messages.map((msg) => (
               <div
                 key={msg.id}
-                className={cn(
-                  'flex gap-3',
-                  msg.role === 'user' && 'flex-row-reverse'
-                )}
+                className={cn('flex gap-3', msg.role === 'user' && 'flex-row-reverse')}
               >
                 {msg.role === 'assistant' && (
                   <div className="w-8 h-8 rounded-lg bg-primary/20 flex items-center justify-center flex-shrink-0">
@@ -164,7 +228,7 @@ export default function ChatPage() {
                     'max-w-[88%] sm:max-w-[75%] rounded-2xl px-3 sm:px-4 py-2.5 sm:py-3 text-sm leading-relaxed',
                     msg.role === 'user'
                       ? 'bg-primary text-primary-foreground ml-auto'
-                      : 'bg-muted/60 border border-border text-foreground'
+                      : 'bg-muted/60 border border-border text-foreground',
                   )}
                 >
                   <p className="whitespace-pre-wrap">{msg.content}</p>
@@ -185,7 +249,6 @@ export default function ChatPage() {
         )}
       </div>
 
-      {/* Input */}
       <div className="flex-shrink-0 pt-3 sm:pt-4 pb-2 sm:pb-4">
         <div className="flex gap-2 rounded-2xl bg-muted/60 border border-border p-2 focus-within:border-primary/40 focus-within:ring-1 focus-within:ring-primary/20 transition-all duration-200">
           <textarea
@@ -194,17 +257,18 @@ export default function ChatPage() {
             onKeyDown={handleKeyDown}
             placeholder="Mensagem para a Clareza..."
             rows={1}
-            className="flex-1 min-h-[44px] max-h-32 resize-none bg-transparent px-3 py-2.5 text-sm text-foreground placeholder:text-muted-foreground outline-none"
+            disabled={isLoadingHistory}
+            className="flex-1 min-h-[44px] max-h-32 resize-none bg-transparent px-3 py-2.5 text-sm text-foreground placeholder:text-muted-foreground outline-none disabled:opacity-50"
           />
           <button
             type="button"
             onClick={sendMessage}
-            disabled={!input.trim() || isTyping}
+            disabled={!input.trim() || isTyping || isLoadingHistory}
             className={cn(
               'flex-shrink-0 w-10 h-10 rounded-xl flex items-center justify-center transition-all duration-200',
-              input.trim() && !isTyping
+              input.trim() && !isTyping && !isLoadingHistory
                 ? 'bg-primary text-primary-foreground hover:bg-primary/90'
-                : 'bg-muted/60 text-muted-foreground cursor-not-allowed'
+                : 'bg-muted/60 text-muted-foreground cursor-not-allowed',
             )}
             aria-label="Enviar"
           >
@@ -212,7 +276,7 @@ export default function ChatPage() {
           </button>
         </div>
         <p className="text-[10px] text-muted-foreground/80 mt-2 text-center">
-          A Clareza pode cometer erros. Use as informações apenas como apoio à decisão.
+          A Clareza analisa seus lançamentos, metas e dívidas a cada mensagem. Pode cometer erros — use como apoio.
         </p>
       </div>
     </div>

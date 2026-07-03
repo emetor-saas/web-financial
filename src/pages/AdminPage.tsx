@@ -100,7 +100,7 @@ const AdminPage = () => {
     { id: 'settings' as const, label: 'Configurações' },
   ];
 
-  if (profileType !== 'ADMIN') return <Navigate to="/app/dashboard" replace />;
+  if (profileType !== 'ADMIN') return <Navigate to="/app/jornada" replace />;
 
   if (isLoading) {
     return (

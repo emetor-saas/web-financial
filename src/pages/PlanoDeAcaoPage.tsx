@@ -1,9 +1,10 @@
 import { motion } from 'framer-motion';
 import { CheckCircle2, Circle, Clock, Zap, ArrowUp } from 'lucide-react';
-import { useState } from 'react';
-import { useQuery } from '@tanstack/react-query';
+import { useEffect, useState } from 'react';
+import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { apiFetch } from '@/lib/apiClient';
 import { buildClientNarrative } from '@/lib/clientNarrative';
+import { fetchActionPlanProgress, saveActionPlanProgress } from '@/services/actionPlan';
 
 const anim = (i: number) => ({ initial: { opacity: 0, y: 15 }, animate: { opacity: 1, y: 0 }, transition: { delay: i * 0.05 } });
 
@@ -38,17 +39,38 @@ const PlanoDeAcaoPage = () => {
     ] as { id: string; bucket: string; title: string }[];
   const narrative = buildClientNarrative(data ?? {}, 'plano');
 
+  const queryClient = useQueryClient();
+  const { data: progressData } = useQuery({
+    queryKey: ['action-plan-progress'],
+    queryFn: fetchActionPlanProgress,
+  });
+
   const [completedIds, setCompletedIds] = useState<Set<string>>(new Set());
-  const [filter, setFilter] = useState<'all' | 'today' | '7d' | '30d' | '90d'>('all');
+
+  useEffect(() => {
+    if (progressData?.completedIds) {
+      setCompletedIds(new Set(progressData.completedIds));
+    }
+  }, [progressData?.completedIds]);
+
+  const saveMutation = useMutation({
+    mutationFn: (ids: string[]) => saveActionPlanProgress(ids),
+    onSuccess: () => {
+      void queryClient.invalidateQueries({ queryKey: ['journey-current'] });
+    },
+  });
 
   const toggleAction = (id: string) => {
-    setCompletedIds(prev => {
+    setCompletedIds((prev) => {
       const next = new Set(prev);
       if (next.has(id)) next.delete(id);
       else next.add(id);
+      saveMutation.mutate([...next]);
       return next;
     });
   };
+
+  const [filter, setFilter] = useState<'all' | 'today' | '7d' | '30d' | '90d'>('all');
 
   const filtered =
     filter === 'all'

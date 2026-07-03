@@ -26,12 +26,16 @@ const PreparandoExperienciaPage = () => {
           queryKey: ['dashboard-stats'],
           queryFn: () => apiFetch('/api/dashboard/stats'),
         }),
+        queryClient.prefetchQuery({
+          queryKey: ['journey-current'],
+          queryFn: () => apiFetch('/api/journey/current'),
+        }),
       ]);
 
       // Mantem breve espera para comunicar progresso ao usuario.
       await new Promise((resolve) => setTimeout(resolve, 2600));
       if (!active) return;
-      navigate('/app/dashboard', { replace: true });
+      navigate('/app/jornada', { replace: true });
     };
 
     void warmup();

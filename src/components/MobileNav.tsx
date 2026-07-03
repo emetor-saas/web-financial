@@ -2,7 +2,7 @@ import { useLocation, useNavigate, Link } from 'react-router-dom';
 import { useAuth } from '@/context/AuthContext';
 import {
   LayoutDashboard, Activity, ShieldCheck, CreditCard, Target,
-  BrainCircuit, User, Users, Settings, LogOut, Sparkles, FileUp, Crown, Lock,
+  BrainCircuit, User, Users, Settings, LogOut, Sparkles, FileUp, Crown, Lock, Compass, List,
 } from 'lucide-react';
 import { Sheet, SheetContent } from '@/components/ui/sheet';
 import { cn } from '@/lib/utils';
@@ -10,6 +10,7 @@ import { tenantCanUseChat } from '@/lib/billing';
 import { toast } from 'sonner';
 
 const NAV_ITEMS = [
+  { label: 'Minha Jornada', path: '/app/jornada', icon: Compass, roles: ['SINGLE', 'COUPLE', 'ADMIN'] },
   { label: 'Dashboard', path: '/app/dashboard', icon: LayoutDashboard, roles: ['SINGLE', 'COUPLE', 'ADMIN'] },
   { label: 'Chat IA', path: '/app/chat', icon: Sparkles, roles: ['SINGLE', 'COUPLE', 'ADMIN'] },
   { label: 'Diagnóstico', path: '/app/diagnostico', icon: Activity, roles: ['SINGLE', 'COUPLE'] },
@@ -17,6 +18,7 @@ const NAV_ITEMS = [
   { label: 'Dívidas', path: '/app/dividas', icon: CreditCard, roles: ['SINGLE', 'COUPLE'] },
   { label: 'Metas', path: '/app/metas', icon: Target, roles: ['SINGLE', 'COUPLE'] },
   { label: 'Insights IA', path: '/app/insights', icon: BrainCircuit, roles: ['SINGLE', 'COUPLE'] },
+  { label: 'Lançamentos', path: '/app/lancamentos', icon: List, roles: ['SINGLE', 'COUPLE', 'ADMIN'] },
   { label: 'Importar extrato', path: '/app/extratos', icon: FileUp, roles: ['SINGLE', 'COUPLE', 'ADMIN'] },
   { label: 'Espaço Casal', path: '/app/casal', icon: Users, roles: ['SINGLE', 'COUPLE'], requiresMultiTenant: true },
   { label: 'Admin Master', path: '/app/admin', icon: Settings, roles: ['ADMIN'] },

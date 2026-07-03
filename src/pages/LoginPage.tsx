@@ -18,7 +18,7 @@ const LoginPage = () => {
     setLoading(true);
     try {
       await loginWithCredentials(email, password);
-      navigate('/app/dashboard', { replace: true });
+      navigate('/app/jornada', { replace: true });
     } catch (err) {
       const message =
         err instanceof Error ? err.message : 'Não foi possível entrar. Verifique credenciais.';

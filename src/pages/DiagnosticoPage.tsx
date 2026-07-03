@@ -17,6 +17,7 @@ import { getScoreColor, getScoreLabel } from '@/utils/formatters';
 import { useQuery } from '@tanstack/react-query';
 import { apiFetch } from '@/lib/apiClient';
 import { buildClientNarrative } from '@/lib/clientNarrative';
+import { fetchScoreHistory } from '@/services/actionPlan';
 
 const anim = (i: number) => ({
   initial: { opacity: 0, y: 12 },
@@ -55,9 +56,15 @@ const DiagnosticoPage = () => {
     queryFn: () => apiFetch<any>('/api/diagnostic/current'),
   });
 
+  const { data: scoreHistory } = useQuery({
+    queryKey: ['score-history'],
+    queryFn: fetchScoreHistory,
+  });
+
   const auraScore = data?.auraScore?.score ?? 0;
   const isEstimated = data?.auraScore?.isEstimated ?? false;
-  const usedOnboarding = data?.missingData?.hasOnboardingSnapshot && data?.missingData?.isFullyEstimated;
+  const usesTransactions = data?.dataSources?.hasImportedTransactions === true;
+  const usedOnboarding = !usesTransactions && data?.missingData?.isFullyEstimated === true;
 
   const pillars = data?.auraScore?.pillars ?? {};
   const displayScores = PILLAR_KEYS.map((p) => ({
@@ -78,14 +85,9 @@ const DiagnosticoPage = () => {
     trend: trendVsAverage(p.display, avgDisplay),
   }));
 
-  const historyData = [
-    { month: 'Out', score: 55 },
-    { month: 'Nov', score: 58 },
-    { month: 'Dez', score: 56 },
-    { month: 'Jan', score: 60 },
-    { month: 'Fev', score: 62 },
-    { month: 'Mar', score: auraScore },
-  ];
+  const historyData = scoreHistory?.hasData
+    ? scoreHistory.points.map((p) => ({ month: p.month, score: p.score }))
+    : [{ month: 'Atual', score: auraScore }];
 
   const dimensions = [
     {
@@ -134,6 +136,13 @@ const DiagnosticoPage = () => {
         <p className="text-muted-foreground text-sm mt-1">
           <span className={`font-semibold ${getScoreColor(auraScore)}`}>{getScoreLabel(auraScore)}</span>
         </p>
+        {usesTransactions && (
+          <p className="text-xs text-emerald-700 dark:text-emerald-400 border border-emerald-500/30 rounded-xl px-4 py-3 mb-4">
+            Renda, gastos e score calculados com base nos extratos importados. As respostas do diagnóstico inicial
+            servem só como contexto, não entram na soma.
+          </p>
+        )}
+
         {usedOnboarding && (
           <p className="text-[11px] text-amber-400 mt-2 max-w-lg mx-auto">
             Este diagnóstico inicial está baseado principalmente nas respostas do onboarding. Conforme você importar extratos e

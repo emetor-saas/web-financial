@@ -7,10 +7,9 @@ import {
   listMasterPlans,
   createMasterPlan,
   updateMasterPlan,
-  deactivateMasterPlan,
 } from '@/services/masterPlans';
 import { toast } from 'sonner';
-import { CreditCard, Crown, ExternalLink, Loader2, Plus, CheckCircle2, Trash2 } from 'lucide-react';
+import { CreditCard, Crown, ExternalLink, Loader2, Plus, CheckCircle2 } from 'lucide-react';
 
 function formatPrice(amountInCents: number, currency: string) {
   if (amountInCents === 0) return 'Gratuito';
@@ -132,8 +131,8 @@ const TenantPlansSection = () => {
           Escolha o plano que melhor se encaixa na sua jornada financeira.
         </p>
         <p className="text-xs text-amber-600/90 dark:text-amber-400/90 rounded-xl border border-amber-500/25 bg-amber-500/5 px-3 py-2">
-          Novos cadastros têm <strong>1 hora</strong> de teste do app. Depois disso é necessário assinar um plano
-          pago para continuar. O <strong>chat com IA</strong> só libera com assinatura paga.
+          Novos cadastros têm <strong>1 hora</strong> de teste gratuito do app (trial da conta). Planos pagos
+          podem incluir dias de trial adicionais no Stripe — veja a descrição de cada plano.
         </p>
         {user?.household?.billingPaymentMethod && (
           <p className="text-xs text-muted-foreground rounded-xl border border-border bg-muted/20 px-3 py-2 flex items-center gap-2">
@@ -276,20 +275,39 @@ const MasterPlansSection = () => {
     },
   });
 
-  const deactivateMutation = useMutation({
-    mutationFn: (id: string) => deactivateMasterPlan(id),
-    onSuccess: () => {
-      toast.success('Plano desativado.');
-      refetch();
-    },
-    onError: (err) => {
-      toast.error(err instanceof Error ? err.message : 'Erro ao desativar plano.');
-    },
-  });
-
   const [newName, setNewName] = useState('');
   const [newCode, setNewCode] = useState('');
   const [newPrice, setNewPrice] = useState('0');
+  const [editingId, setEditingId] = useState<string | null>(null);
+  const [editName, setEditName] = useState('');
+  const [editDescription, setEditDescription] = useState('');
+  const [editPrice, setEditPrice] = useState('');
+  const [editTrialDays, setEditTrialDays] = useState('');
+  const [editSortOrder, setEditSortOrder] = useState('');
+
+  const startEdit = (plan: (typeof sortedPlans)[0]) => {
+    setEditingId(plan.id);
+    setEditName(plan.name);
+    setEditDescription(plan.description ?? '');
+    setEditPrice(String(plan.amountInCents / 100));
+    setEditTrialDays(plan.trialDays != null ? String(plan.trialDays) : '');
+    setEditSortOrder(String(plan.sortOrder));
+  };
+
+  const saveEdit = (id: string) => {
+    const amount = Math.round(Number(editPrice.replace(',', '.')) * 100);
+    updateMutation.mutate({
+      id,
+      payload: {
+        name: editName,
+        description: editDescription || null,
+        amountInCents: Number.isNaN(amount) ? undefined : amount,
+        trialDays: editTrialDays ? Number(editTrialDays) : null,
+        sortOrder: Number(editSortOrder) || 0,
+      },
+    });
+    setEditingId(null);
+  };
 
   const sortedPlans = useMemo(
     () => (plans ?? []).slice().sort((a, b) => a.sortOrder - b.sortOrder),
@@ -397,41 +415,54 @@ const MasterPlansSection = () => {
             {sortedPlans.map((plan) => (
               <div
                 key={plan.id}
-                className="flex items-center justify-between gap-3 border border-border rounded-xl px-3 py-2 bg-card"
+                className="border border-border rounded-xl px-3 py-3 bg-card space-y-3"
               >
-                <div className="space-y-0.5">
-                  <p className="text-sm font-medium">
-                    {plan.name}{' '}
-                    {!plan.isActive && (
-                      <span className="text-[10px] uppercase text-destructive ml-1">inativo</span>
-                    )}
-                  </p>
-                  <p className="text-[11px] text-muted-foreground">
-                    {plan.code} • {formatPrice(plan.amountInCents, plan.currency)} /{' '}
-                    {plan.interval === 'month' ? 'mês' : plan.interval}
-                  </p>
-                </div>
-                <div className="flex items-center gap-2">
-                  <button
-                    type="button"
-                    onClick={() =>
-                      updateMutation.mutate({
-                        id: plan.id,
-                        payload: { isActive: !plan.isActive },
-                      })
-                    }
-                    className="inline-flex items-center justify-center rounded-lg border border-border px-2 py-1 text-[11px] text-muted-foreground hover:bg-accent"
-                  >
-                    {plan.isActive ? 'Desativar' : 'Reativar'}
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => deactivateMutation.mutate(plan.id)}
-                    className="inline-flex items-center justify-center rounded-lg border border-border px-2 py-1 text-[11px] text-destructive hover:bg-destructive/10"
-                  >
-                    <Trash2 size={12} />
-                  </button>
-                </div>
+                {editingId === plan.id ? (
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
+                    <input value={editName} onChange={(e) => setEditName(e.target.value)} className="rounded-lg border border-border px-2 py-1.5 text-sm" placeholder="Nome" />
+                    <input value={editPrice} onChange={(e) => setEditPrice(e.target.value)} className="rounded-lg border border-border px-2 py-1.5 text-sm" placeholder="Preço R$" />
+                    <input value={editDescription} onChange={(e) => setEditDescription(e.target.value)} className="md:col-span-2 rounded-lg border border-border px-2 py-1.5 text-sm" placeholder="Descrição" />
+                    <input value={editTrialDays} onChange={(e) => setEditTrialDays(e.target.value)} className="rounded-lg border border-border px-2 py-1.5 text-sm" placeholder="Dias de trial" />
+                    <input value={editSortOrder} onChange={(e) => setEditSortOrder(e.target.value)} className="rounded-lg border border-border px-2 py-1.5 text-sm" placeholder="Ordem" />
+                    <div className="md:col-span-2 flex gap-2">
+                      <button type="button" onClick={() => saveEdit(plan.id)} className="text-xs font-semibold text-primary">Salvar</button>
+                      <button type="button" onClick={() => setEditingId(null)} className="text-xs text-muted-foreground">Cancelar</button>
+                    </div>
+                  </div>
+                ) : (
+                  <div className="flex items-center justify-between gap-3">
+                    <div className="space-y-0.5">
+                      <p className="text-sm font-medium">
+                        {plan.name}{' '}
+                        {!plan.isActive && (
+                          <span className="text-[10px] uppercase text-destructive ml-1">inativo</span>
+                        )}
+                      </p>
+                      <p className="text-[11px] text-muted-foreground">
+                        {plan.code} • {formatPrice(plan.amountInCents, plan.currency)} /{' '}
+                        {plan.interval === 'month' ? 'mês' : plan.interval}
+                        {plan.description ? ` — ${plan.description}` : ''}
+                      </p>
+                    </div>
+                    <div className="flex items-center gap-2 flex-shrink-0">
+                      <button type="button" onClick={() => startEdit(plan)} className="rounded-lg border border-border px-2 py-1 text-[11px] hover:bg-accent">
+                        Editar
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() =>
+                          updateMutation.mutate({
+                            id: plan.id,
+                            payload: { isActive: !plan.isActive },
+                          })
+                        }
+                        className="rounded-lg border border-border px-2 py-1 text-[11px] text-muted-foreground hover:bg-accent"
+                      >
+                        {plan.isActive ? 'Desativar' : 'Reativar'}
+                      </button>
+                    </div>
+                  </div>
+                )}
               </div>
             ))}
           </div>
