@@ -45,6 +45,7 @@ export async function updateMasterPlan(
     isActive: boolean;
     sortOrder: number;
     trialDays: number | null;
+    amountInCents: number;
   }>,
 ) {
   return apiFetch<MasterPlan>(`/api/master/plans/${id}`, {

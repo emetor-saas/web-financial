@@ -23,6 +23,9 @@ import ExtratosPage from "@/pages/ExtratosPage";
 import ExtratoJobPage from "@/pages/ExtratoJobPage";
 import PlansPage from "@/pages/PlansPage";
 import PreparandoExperienciaPage from "@/pages/PreparandoExperienciaPage";
+import LancamentosPage from "@/pages/LancamentosPage";
+import JornadaPage from "@/pages/JornadaPage";
+import RevisarDiagnosticoPage from "@/pages/RevisarDiagnosticoPage";
 import NotFound from "@/pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -40,6 +43,8 @@ const App = () => (
             <Route path="/cadastro" element={<RegisterPage />} />
             <Route path="/onboarding" element={<OnboardingPage />} />
             <Route path="/app" element={<AppLayout />}>
+              <Route index element={<Navigate to="/app/jornada" replace />} />
+              <Route path="jornada" element={<JornadaPage />} />
               <Route path="dashboard" element={<DashboardPage />} />
               <Route path="diagnostico" element={<DiagnosticoPage />} />
               <Route path="plano-de-acao" element={<PlanoDeAcaoPage />} />
@@ -53,6 +58,8 @@ const App = () => (
               <Route path="casal" element={<CasalPage />} />
               <Route path="admin" element={<AdminPage />} />
               <Route path="chat" element={<ChatPage />} />
+              <Route path="lancamentos" element={<LancamentosPage />} />
+              <Route path="revisar-diagnostico" element={<RevisarDiagnosticoPage />} />
               <Route path="preparando" element={<PreparandoExperienciaPage />} />
             </Route>
             <Route path="/" element={<Navigate to="/login" replace />} />

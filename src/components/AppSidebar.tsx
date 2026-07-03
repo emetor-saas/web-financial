@@ -2,7 +2,7 @@ import { useLocation, useNavigate, Link } from 'react-router-dom';
 import { useAuth } from '@/context/AuthContext';
 import {
   LayoutDashboard, Activity, ShieldCheck, CreditCard, Target,
-  BrainCircuit, User, Users, Settings, LogOut, ChevronLeft, ChevronRight, Sparkles, FileUp, Crown, Lock, ChevronUp,
+  BrainCircuit, User, Users, Settings, LogOut, ChevronLeft, ChevronRight, Sparkles, FileUp, Crown, Lock, ChevronUp, Compass, List,
 } from 'lucide-react';
 import { useState } from 'react';
 import { cn } from '@/lib/utils';
@@ -10,6 +10,7 @@ import { tenantCanUseChat } from '@/lib/billing';
 import { toast } from 'sonner';
 
 const NAV_ITEMS = [
+  { label: 'Minha Jornada', path: '/app/jornada', icon: Compass, roles: ['SINGLE', 'COUPLE', 'ADMIN'] },
   { label: 'Dashboard', path: '/app/dashboard', icon: LayoutDashboard, roles: ['SINGLE', 'COUPLE', 'ADMIN'] },
   { label: 'Chat IA', path: '/app/chat', icon: Sparkles, roles: ['SINGLE', 'COUPLE', 'ADMIN'] },
   { label: 'Diagnóstico', path: '/app/diagnostico', icon: Activity, roles: ['SINGLE', 'COUPLE'] },
@@ -17,6 +18,7 @@ const NAV_ITEMS = [
   { label: 'Dívidas', path: '/app/dividas', icon: CreditCard, roles: ['SINGLE', 'COUPLE'] },
   { label: 'Metas', path: '/app/metas', icon: Target, roles: ['SINGLE', 'COUPLE'] },
   { label: 'Insights IA', path: '/app/insights', icon: BrainCircuit, roles: ['SINGLE', 'COUPLE'] },
+  { label: 'Lançamentos', path: '/app/lancamentos', icon: List, roles: ['SINGLE', 'COUPLE', 'ADMIN'] },
   { label: 'Importar extrato', path: '/app/extratos', icon: FileUp, roles: ['SINGLE', 'COUPLE', 'ADMIN'] },
   { label: 'Planos', path: '/app/planos', icon: Crown, roles: ['SINGLE', 'COUPLE', 'ADMIN'] },
   { label: 'Espaço Casal', path: '/app/casal', icon: Users, roles: ['SINGLE', 'COUPLE'], requiresMultiTenant: true },
@@ -47,7 +49,7 @@ export const AppSidebar = () => {
       collapsed ? "w-16" : "w-56"
     )}>
       <div className="px-4 py-5 flex items-center justify-between border-b border-border">
-        <Link to="/app/dashboard" className="flex flex-col gap-0 transition-opacity duration-200 hover:opacity-80">
+        <Link to="/app/jornada" className="flex flex-col gap-0 transition-opacity duration-200 hover:opacity-80">
           {!collapsed && (
             <>
               <span className="font-display font-black text-base text-foreground tracking-tight leading-none">CLAREZA</span>
@@ -164,15 +166,15 @@ export const AppSidebar = () => {
           </div>
         )}
 
-        <button
-          onClick={() => { }}
+        <Link
+          to="/app/lancamentos"
           className={cn(
             'w-full flex items-center justify-center gap-2 px-4 py-2.5 bg-primary text-primary-foreground rounded-lg text-sm font-bold hover:bg-primary/90 transition-all duration-200',
             collapsed && 'px-2'
           )}
         >
-          {!collapsed ? 'Lançar Transação' : <LogOut size={16} />}
-        </button>
+          {!collapsed ? 'Lançamentos' : <List size={16} />}
+        </Link>
       </div>
     </aside>
   );

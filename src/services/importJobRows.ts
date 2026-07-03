@@ -8,6 +8,10 @@ export interface ImportRowReview {
   type: 'INCOME' | 'EXPENSE' | 'TRANSFER';
   categoryId: string | null;
   categoryName: string | null;
+  confidence?: number;
+  parseSource?: 'classic' | 'ai';
+  parseConfidence?: number;
+  warnings?: string[];
   selectedForImport: boolean;
   reviewStatus: 'PENDING' | 'APPROVED' | 'REJECTED' | 'IMPORTED' | 'ERROR';
   hasPotentialConflict?: boolean;
@@ -35,6 +39,14 @@ export interface ImportJobSummary {
   potentialConflicts: number;
 }
 
+export interface ImportJobError {
+  id: string;
+  rowNumber: number | null;
+  errorType: string;
+  errorMessage: string;
+  createdAt: string;
+}
+
 export interface ImportJobDetail {
   job: {
     id: string;
@@ -51,6 +63,7 @@ export interface ImportJobDetail {
   summary: ImportJobSummary;
   rows: ImportRow[];
   categories: Array<{ id: string; name: string }>;
+  errors: ImportJobError[];
 }
 
 export async function fetchImportJobDetail(id: string): Promise<ImportJobDetail> {

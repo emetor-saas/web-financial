@@ -76,6 +76,10 @@ const ExtratoJobPage = () => {
     queryKey: ['import-job', id],
     queryFn: () => fetchImportJobDetail(id!),
     enabled: Boolean(id),
+    refetchInterval: (query) => {
+      const status = query.state.data?.job.status;
+      return status === 'PENDING' || status === 'PROCESSING' ? 3000 : false;
+    },
   });
 
   const approveMutation = useMutation({
@@ -92,8 +96,20 @@ const ExtratoJobPage = () => {
   const commitMutation = useMutation({
     mutationFn: () => commitImport(id!),
     onSuccess: (res) => {
-      toast.success(`Importação concluída. ${res.importedCount} lançamentos criados.`);
+      if (res.importedCount > 0) {
+        toast.success(`Importação concluída. ${res.importedCount} lançamentos criados.`);
+      } else {
+        toast.warning(
+          'Nenhum lançamento foi importado. Marque as linhas, confira datas/valores e tente novamente.',
+        );
+      }
       queryClient.invalidateQueries({ queryKey: ['import-job', id] });
+      queryClient.invalidateQueries({ queryKey: ['dashboard-stats'] });
+      queryClient.invalidateQueries({ queryKey: ['dashboard-period-transactions'] });
+      queryClient.invalidateQueries({ queryKey: ['diagnostic-current'] });
+      queryClient.invalidateQueries({ queryKey: ['diagnostic-current-dashboard'] });
+      queryClient.invalidateQueries({ queryKey: ['diagnostic-current-insights'] });
+      queryClient.invalidateQueries({ queryKey: ['journey-current'] });
     },
     onError: (err) => {
       toast.error(err instanceof Error ? err.message : 'Erro ao concluir importação.');
@@ -176,7 +192,15 @@ const ExtratoJobPage = () => {
     );
   }
 
-  const { job, summary, rows } = data;
+  const { job, summary, rows, errors = [] } = data;
+  const isProcessing = job.status === 'PENDING' || job.status === 'PROCESSING';
+  const aiOrganizedRows = rows.filter((row) => row.review.parseSource === 'ai').length;
+  const lowConfidenceRows = rows.filter(
+    (row) =>
+      row.review.parseSource === 'ai' &&
+      typeof row.review.parseConfidence === 'number' &&
+      row.review.parseConfidence < 0.7,
+  ).length;
 
   const saveRowEdit = async () => {
     const amount = Number(editForm.amount.replace(',', '.'));
@@ -259,6 +283,7 @@ const ExtratoJobPage = () => {
             </h1>
             <p className="text-muted-foreground text-sm mt-0.5">
               {job.fileName} • {job.fileType} • Status: {job.status}
+              {aiOrganizedRows > 0 ? ` • ${aiOrganizedRows} linha(s) organizada(s) por IA` : ''}
             </p>
           </div>
         </div>
@@ -292,6 +317,44 @@ const ExtratoJobPage = () => {
           </button>
         </div>
       </header>
+
+      {isProcessing && (
+        <div className="rounded-xl border border-border bg-muted/40 px-4 py-3 text-sm text-muted-foreground">
+          Processando extrato… a página atualiza automaticamente.
+        </div>
+      )}
+
+      {!isProcessing && rows.length === 0 && (
+        <div className="rounded-xl border border-amber-500/30 bg-amber-500/10 px-4 py-3 text-sm space-y-2">
+          <p className="font-medium text-foreground">Nenhuma linha foi extraída deste arquivo.</p>
+          <ul className="list-disc pl-5 text-muted-foreground space-y-1">
+            <li>PDFs de banco costumam falhar — prefira exportar <strong>OFX</strong> ou <strong>CSV</strong>.</li>
+            <li>Se usa IA, confira créditos da OpenAI no <code className="text-xs">OPENAI_API_KEY</code>.</li>
+            <li>PDF escaneado (imagem) não é lido automaticamente.</li>
+          </ul>
+          {errors.length > 0 && (
+            <div className="pt-2 border-t border-amber-500/20 space-y-1">
+              {errors.map((error) => (
+                <p key={error.id} className="text-xs text-muted-foreground">
+                  <span className="font-mono text-[10px] uppercase">{error.errorType}</span>:{' '}
+                  {error.errorMessage}
+                </p>
+              ))}
+            </div>
+          )}
+        </div>
+      )}
+
+      {aiOrganizedRows > 0 && (
+        <div className="rounded-xl border border-primary/25 bg-primary/5 px-4 py-3 text-sm text-muted-foreground">
+          <p className="font-medium text-foreground">Pré-organização por IA</p>
+          <p className="mt-1">
+            A IA separou data, valor e descrição para facilitar a revisão. Confira cada linha antes de
+            importar — especialmente as de confiança baixa
+            {lowConfidenceRows > 0 ? ` (${lowConfidenceRows})` : ''}.
+          </p>
+        </div>
+      )}
 
       <section className="grid grid-cols-1 md:grid-cols-3 gap-4">
         <div className="card-solid rounded-2xl p-4 space-y-1">
@@ -344,16 +407,25 @@ const ExtratoJobPage = () => {
                 <th className="text-left py-2.5 px-2">Data</th>
                 <th className="text-left py-2.5 px-2">Descrição</th>
                 <th className="text-left py-2.5 px-2">Valor</th>
+                <th className="text-left py-2.5 px-2">Confiança</th>
                 <th className="text-left py-2.5 px-2">Categoria</th>
                 <th className="text-left py-2.5 px-2">Status</th>
                 <th className="text-left py-2.5 px-2">Ações</th>
               </tr>
             </thead>
             <tbody>
-              {rows.map((row) => (
+              {rows.map((row) => {
+                const isLowConfidence =
+                  row.review.parseSource === 'ai' &&
+                  typeof row.review.parseConfidence === 'number' &&
+                  row.review.parseConfidence < 0.7;
+
+                return (
                 <tr
                   key={row.id}
-                  className="border-b border-border/60 hover:bg-accent/20"
+                  className={`border-b border-border/60 hover:bg-accent/20 ${
+                    isLowConfidence ? 'bg-amber-500/5' : ''
+                  }`}
                 >
                   <td className="py-2.5 px-2">
                     <input
@@ -375,6 +447,25 @@ const ExtratoJobPage = () => {
                       style: 'currency',
                       currency: 'BRL',
                     })}
+                  </td>
+                  <td className="py-2.5 px-2 text-muted-foreground">
+                    {row.review.parseSource === 'ai' ? (
+                      <span
+                        className={`inline-flex items-center rounded-full px-2 py-0.5 text-[10px] font-semibold ${
+                          isLowConfidence
+                            ? 'bg-amber-500/15 text-amber-600'
+                            : 'bg-primary/10 text-primary'
+                        }`}
+                        title={(row.review.warnings ?? []).join(' ')}
+                      >
+                        IA{' '}
+                        {typeof row.review.parseConfidence === 'number'
+                          ? `${Math.round(row.review.parseConfidence * 100)}%`
+                          : '—'}
+                      </span>
+                    ) : (
+                      <span className="text-[10px]">Padrão</span>
+                    )}
                   </td>
                   <td className="py-2.5 px-2 text-muted-foreground">
                     {row.review.categoryName ?? 'Sem categoria'}
@@ -417,7 +508,8 @@ const ExtratoJobPage = () => {
                     </div>
                   </td>
                 </tr>
-              ))}
+              );
+              })}
             </tbody>
           </table>
         </div>

@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { useNavigate, Navigate } from 'react-router-dom';
+import { useNavigate, Navigate, useSearchParams } from 'react-router-dom';
 import { useQueryClient } from '@tanstack/react-query';
 import { useAuth } from '@/context/AuthContext';
 import { motion, AnimatePresence } from 'framer-motion';
@@ -51,6 +51,8 @@ const InputCard = ({ title, description, children, animIndex = 0 }: { title: str
 const OnboardingPage = () => {
   const { isAuthenticated } = useAuth();
   const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
+  const isUpdate = searchParams.get('atualizar') === '1';
   const queryClient = useQueryClient();
   const [step, setStep] = useState<number>(1);
   const [submitting, setSubmitting] = useState(false);
@@ -133,6 +135,14 @@ const OnboardingPage = () => {
           </div>
         </div>
       </header>
+
+      {isUpdate && (
+        <div className="max-w-5xl mx-auto px-6 sm:px-8 pt-4">
+          <p className="text-sm text-amber-800 bg-amber-50 border border-amber-200 rounded-xl px-4 py-3">
+            Você está <strong>atualizando</strong> seu diagnóstico. As respostas anteriores serão substituídas ao concluir.
+          </p>
+        </div>
+      )}
 
       <main className="flex-1 w-full max-w-3xl mx-auto px-6 py-10 flex flex-col">
         <div className="text-center space-y-3 mb-12">

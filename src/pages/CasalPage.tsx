@@ -2,12 +2,11 @@ import { useAuth } from '@/context/AuthContext';
 import { Navigate } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import { formatCurrency, getScoreColor, getScoreLabel } from '@/utils/formatters';
-import { Users, Sparkles, Calendar, Circle, MessageCircle, AlertTriangle } from 'lucide-react';
+import { Users, Sparkles, Calendar, Circle, MessageCircle, AlertTriangle, Home, Wallet } from 'lucide-react';
 import { PieChart, Pie, Cell, ResponsiveContainer, BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip } from 'recharts';
 import { useQuery } from '@tanstack/react-query';
 import { fetchCoupleOverview } from '@/services/couple';
 import { fetchDashboardStats } from '@/services/dashboard';
-import { fetchGoals } from '@/services/goals';
 import { fetchAlerts } from '@/services/alerts';
 import { fetchReminders } from '@/services/reminders';
 
@@ -49,12 +48,6 @@ const CasalPage = () => {
     enabled: isAuthenticated && canAccessCasal,
   });
 
-  const { data: goals = [] } = useQuery({
-    queryKey: ['goals'],
-    queryFn: fetchGoals,
-    enabled: isAuthenticated && canAccessCasal,
-  });
-
   const { data: alertsData } = useQuery({
     queryKey: ['alerts'],
     queryFn: fetchAlerts,
@@ -68,7 +61,7 @@ const CasalPage = () => {
   });
 
   if (!isAuthenticated) return <Navigate to="/login" replace />;
-  if (!canAccessCasal) return <Navigate to="/app/dashboard" replace />;
+  if (!canAccessCasal) return <Navigate to="/app/jornada" replace />;
 
   if (coupleLoading || !couple) {
     return (
@@ -142,6 +135,52 @@ const CasalPage = () => {
           </p>
         </div>
       </motion.div>
+
+      <motion.div {...anim(0.8)} className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+        <div className="bg-card border border-border rounded-xl p-4">
+          <div className="flex items-center gap-2 text-muted-foreground mb-2">
+            <Home size={14} />
+            <span className="text-[10px] font-bold uppercase tracking-widest">Gastos compartilhados</span>
+          </div>
+          <p className="text-xl font-black tabular-nums">{formatCurrency(couple.avgMonthlySharedExpenses)}</p>
+          <p className="text-xs text-muted-foreground mt-1">Média mensal (3 meses)</p>
+        </div>
+        <div className="bg-card border border-border rounded-xl p-4">
+          <div className="flex items-center gap-2 text-muted-foreground mb-2">
+            <Wallet size={14} />
+            <span className="text-[10px] font-bold uppercase tracking-widest">Gastos pessoais</span>
+          </div>
+          <p className="text-xl font-black tabular-nums">{formatCurrency(couple.avgMonthlyPersonalExpenses)}</p>
+          <p className="text-xs text-muted-foreground mt-1">Carteiras individuais (média 3 meses)</p>
+        </div>
+        <div className="bg-card border border-primary/20 rounded-xl p-4">
+          <div className="flex items-center gap-2 text-muted-foreground mb-2">
+            <span className="text-[10px] font-bold uppercase tracking-widest">Este mês</span>
+          </div>
+          <p className="text-xl font-black tabular-nums">{formatCurrency(couple.currentMonthExpenses)}</p>
+          <p className="text-xs text-muted-foreground mt-1">Despesas totais da casa</p>
+        </div>
+      </motion.div>
+
+      {couple.monthlySpendingByMember.length > 0 && (
+        <motion.div {...anim(0.9)} className="bg-card border border-border rounded-xl p-5">
+          <h3 className="font-display font-semibold mb-3">Quem gastou (média 3 meses)</h3>
+          <div className="space-y-2">
+            {couple.monthlySpendingByMember.map((member) => (
+              <div key={member.userId} className="flex items-center justify-between text-sm gap-4">
+                <span className="font-medium">{member.name}</span>
+                <span className="tabular-nums font-semibold">{formatCurrency(member.avgMonthly)}</span>
+              </div>
+            ))}
+            {(couple.sharedUnattributedAvgMonthly ?? 0) > 0 && (
+              <p className="text-xs text-muted-foreground pt-2 border-t border-border">
+                Gastos compartilhados sem responsável atribuído:{' '}
+                <strong>{formatCurrency(couple.sharedUnattributedAvgMonthly ?? 0)}</strong>/mês
+              </p>
+            )}
+          </div>
+        </motion.div>
+      )}
 
       <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
         {memberStats.map((person, i) => (
@@ -270,23 +309,29 @@ const CasalPage = () => {
 
       <motion.div {...anim(6)} className="bg-card border border-border rounded-xl p-6">
         <h3 className="font-display font-semibold mb-4">Metas compartilhadas</h3>
-        {goals.length === 0 ? (
+        {couple.goalsProgress.length === 0 ? (
           <p className="text-sm text-muted-foreground">Nenhuma meta cadastrada ainda.</p>
         ) : (
           <div className="space-y-4">
-            {goals.map((g) => {
-              const progress =
-                g.targetAmount > 0 ? Math.min(100, Math.round((g.currentAmount / g.targetAmount) * 100)) : 0;
+            {couple.goalsProgress.map((g) => {
+              const progress = Math.min(100, Math.round(g.progressPct * 100));
               const tone =
-                g.isAchieved ? 'bg-success' : progress >= 70 ? 'bg-success' : progress >= 40 ? 'bg-warning' : 'bg-destructive';
+                g.isAchieved ? 'bg-success' : !g.onTrack ? 'bg-destructive' : progress >= 70 ? 'bg-success' : progress >= 40 ? 'bg-warning' : 'bg-muted-foreground';
               return (
                 <div key={g.id} className="flex items-center gap-4">
                   <div className="flex-1">
-                    <div className="flex justify-between items-center mb-1">
+                    <div className="flex justify-between items-center mb-1 gap-2 flex-wrap">
                       <span className="text-sm font-medium">{g.name}</span>
-                      <span className="text-xs text-muted-foreground tabular-nums">
-                        {formatCurrency(g.currentAmount)} / {formatCurrency(g.targetAmount)}
-                      </span>
+                      <div className="flex items-center gap-2">
+                        {!g.isAchieved && (
+                          <span className={`text-[10px] font-semibold uppercase px-2 py-0.5 rounded-full ${g.onTrack ? 'bg-emerald-500/15 text-emerald-600' : 'bg-red-500/15 text-red-600'}`}>
+                            {g.onTrack ? 'No ritmo' : 'Em risco'}
+                          </span>
+                        )}
+                        <span className="text-xs text-muted-foreground tabular-nums">
+                          {formatCurrency(g.currentAmount)} / {formatCurrency(g.targetAmount)}
+                        </span>
+                      </div>
                     </div>
                     <div className="h-1.5 bg-accent rounded-full overflow-hidden">
                       <div className={`h-full rounded-full ${tone}`} style={{ width: `${progress}%` }} />

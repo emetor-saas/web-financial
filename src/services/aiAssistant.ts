@@ -13,6 +13,25 @@ export interface AiAssistantResponse {
   answer: string;
   summary: unknown;
   hasOpenAI: boolean;
+  userMessageId?: string;
+  assistantMessageId?: string;
+}
+
+export interface AiChatMessage {
+  id: string;
+  role: 'user' | 'assistant';
+  content: string;
+  createdAt: string;
+}
+
+export async function fetchAssistantChatHistory(
+  mode: 'tenant' | 'master' = 'tenant',
+): Promise<AiChatMessage[]> {
+  const params = new URLSearchParams({ mode });
+  const data = await apiFetch<{ messages: AiChatMessage[] }>(
+    `/api/ai/assistant/messages?${params.toString()}`,
+  );
+  return data.messages;
 }
 
 export async function askFinancialAssistant(
@@ -31,3 +50,11 @@ export async function askFinancialAssistant(
   });
 }
 
+export async function clearAssistantChatHistory(
+  mode: 'tenant' | 'master' = 'tenant',
+): Promise<void> {
+  const params = new URLSearchParams({ mode });
+  await apiFetch<{ success: boolean }>(`/api/ai/assistant/messages?${params.toString()}`, {
+    method: 'DELETE',
+  });
+}
