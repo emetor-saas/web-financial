@@ -24,8 +24,10 @@ import ExtratoJobPage from "@/pages/ExtratoJobPage";
 import PlansPage from "@/pages/PlansPage";
 import PreparandoExperienciaPage from "@/pages/PreparandoExperienciaPage";
 import LancamentosPage from "@/pages/LancamentosPage";
-import JornadaPage from "@/pages/JornadaPage";
+import CategoriasPage from "@/pages/CategoriasPage";
+import MinhaCasaPage from "@/pages/MinhaCasaPage";
 import RevisarDiagnosticoPage from "@/pages/RevisarDiagnosticoPage";
+import SimuladoresPage from "@/pages/SimuladoresPage";
 import NotFound from "@/pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -43,12 +45,14 @@ const App = () => (
             <Route path="/cadastro" element={<RegisterPage />} />
             <Route path="/onboarding" element={<OnboardingPage />} />
             <Route path="/app" element={<AppLayout />}>
-              <Route index element={<Navigate to="/app/jornada" replace />} />
-              <Route path="jornada" element={<JornadaPage />} />
+              <Route index element={<Navigate to="/app/minha-casa" replace />} />
+              <Route path="jornada" element={<Navigate to="/app/minha-casa" replace />} />
+              <Route path="minha-casa" element={<MinhaCasaPage />} />
               <Route path="dashboard" element={<DashboardPage />} />
               <Route path="diagnostico" element={<DiagnosticoPage />} />
               <Route path="plano-de-acao" element={<PlanoDeAcaoPage />} />
               <Route path="dividas" element={<DividasPage />} />
+              <Route path="simuladores" element={<SimuladoresPage />} />
               <Route path="metas" element={<MetasPage />} />
               <Route path="insights" element={<InsightsPage />} />
               <Route path="extratos" element={<ExtratosPage />} />
@@ -59,6 +63,7 @@ const App = () => (
               <Route path="admin" element={<AdminPage />} />
               <Route path="chat" element={<ChatPage />} />
               <Route path="lancamentos" element={<LancamentosPage />} />
+              <Route path="categorias" element={<CategoriasPage />} />
               <Route path="revisar-diagnostico" element={<RevisarDiagnosticoPage />} />
               <Route path="preparando" element={<PreparandoExperienciaPage />} />
             </Route>
