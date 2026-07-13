@@ -1,32 +1,53 @@
-import { useState, useRef, useEffect, useCallback } from 'react';
+import { useState, useRef, useEffect, useCallback, useLayoutEffect } from 'react';
 import { Link } from 'react-router-dom';
+import { useQueryClient } from '@tanstack/react-query';
 import { Sparkles, Send, Loader2, Crown, Trash2 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import {
   askFinancialAssistant,
   clearAssistantChatHistory,
   fetchAssistantChatHistory,
+  type AiAssistantResponse,
 } from '@/services/aiAssistant';
 import { useAuth } from '@/context/AuthContext';
 import { tenantCanUseChat } from '@/lib/billing';
 import { toast } from 'sonner';
+import { MentorStructuredCards } from '@/components/MentorStructuredCards';
+import { ConsentGateBanner, useHasConsent } from '@/components/ConsentGateBanner';
+import { MentorCheckInsCard } from '@/components/MentorCheckInsCard';
+import { ChatMessageContent } from '@/components/ChatMessageContent';
 
 type MessageRole = 'user' | 'assistant';
 
 interface Message {
+  /** Chave estável de UI (não troca no meio da conversa). */
   id: string;
+  serverId?: string;
   role: MessageRole;
   content: string;
   timestamp: Date;
+  mentor?: AiAssistantResponse['mentor'];
+  diagnosis?: AiAssistantResponse['diagnosis'];
+}
+
+function scrollChatToBottom(el: HTMLDivElement | null, behavior: ScrollBehavior = 'smooth') {
+  if (!el) return;
+  el.scrollTo({ top: el.scrollHeight, behavior });
 }
 
 export default function ChatPage() {
   const { user } = useAuth();
+  const queryClient = useQueryClient();
+  const { hasConsent, isLoading: consentLoading } = useHasConsent('ai_chat');
   const [messages, setMessages] = useState<Message[]>([]);
   const [input, setInput] = useState('');
   const [isTyping, setIsTyping] = useState(false);
   const [isLoadingHistory, setIsLoadingHistory] = useState(true);
   const scrollRef = useRef<HTMLDivElement>(null);
+  const historyLoadedForUser = useRef<string | null>(null);
+
+  const canChat = Boolean(user && tenantCanUseChat(user));
+  const userId = user?.id ?? '';
 
   const loadHistory = useCallback(async () => {
     setIsLoadingHistory(true);
@@ -35,6 +56,7 @@ export default function ChatPage() {
       setMessages(
         rows.map((row) => ({
           id: row.id,
+          serverId: row.id,
           role: row.role,
           content: row.content,
           timestamp: new Date(row.createdAt),
@@ -47,25 +69,32 @@ export default function ChatPage() {
     }
   }, []);
 
+  // Só carrega histórico quando o usuário (ou permissão de chat) muda de verdade —
+  // não a cada poll de /me (novo objeto user a cada 60s).
   useEffect(() => {
-    if (user && tenantCanUseChat(user)) {
-      void loadHistory();
-    } else {
+    if (!canChat || !userId) {
+      historyLoadedForUser.current = null;
       setIsLoadingHistory(false);
+      if (!canChat) setMessages([]);
+      return;
     }
-  }, [user, loadHistory]);
+    if (historyLoadedForUser.current === userId) return;
+    historyLoadedForUser.current = userId;
+    void loadHistory();
+  }, [canChat, userId, loadHistory]);
 
-  useEffect(() => {
-    scrollRef.current?.scrollTo({ top: scrollRef.current.scrollHeight, behavior: 'smooth' });
-  }, [messages, isTyping]);
+  useLayoutEffect(() => {
+    if (isLoadingHistory) return;
+    scrollChatToBottom(scrollRef.current, messages.length <= 2 ? 'auto' : 'smooth');
+  }, [messages.length, isTyping, isLoadingHistory]);
 
   const sendMessage = async () => {
     const text = input.trim();
-    if (!text || isTyping) return;
+    if (!text || isTyping || !hasConsent) return;
 
-    const optimisticId = crypto.randomUUID();
+    const clientId = crypto.randomUUID();
     const userMsg: Message = {
-      id: optimisticId,
+      id: clientId,
       role: 'user',
       content: text,
       timestamp: new Date(),
@@ -75,18 +104,25 @@ export default function ChatPage() {
     setIsTyping(true);
     try {
       const response = await askFinancialAssistant({ message: text, mode: 'tenant' });
-      setMessages((prev) =>
-        prev.map((m) => (m.id === optimisticId ? { ...m, id: response.userMessageId ?? m.id } : m)),
-      );
       const assistantMsg: Message = {
         id: response.assistantMessageId ?? crypto.randomUUID(),
+        serverId: response.assistantMessageId,
         role: 'assistant',
         content: response.answer,
         timestamp: new Date(),
+        mentor: response.mentor ?? null,
+        diagnosis: response.diagnosis ?? null,
       };
-      setMessages((prev) => [...prev, assistantMsg]);
+      setMessages((prev) =>
+        prev.map((m) =>
+          m.id === clientId
+            ? { ...m, serverId: response.userMessageId ?? m.serverId }
+            : m,
+        ).concat(assistantMsg),
+      );
+      void queryClient.invalidateQueries({ queryKey: ['mentor-check-ins'] });
     } catch (err) {
-      setMessages((prev) => prev.filter((m) => m.id !== optimisticId));
+      setMessages((prev) => prev.filter((m) => m.id !== clientId));
       const msg = err instanceof Error ? err.message : '';
       const isQuota =
         msg.includes('429') || msg.includes('quota') || msg.includes('insufficient_quota');
@@ -118,7 +154,7 @@ export default function ChatPage() {
   const handleKeyDown = (e: React.KeyboardEvent) => {
     if (e.key === 'Enter' && !e.shiftKey) {
       e.preventDefault();
-      sendMessage();
+      void sendMessage();
     }
   };
 
@@ -145,7 +181,7 @@ export default function ChatPage() {
 
   return (
     <div className="min-h-[calc(100dvh-8rem)] sm:min-h-[calc(100dvh-10rem)] flex flex-col max-w-3xl mx-auto w-full px-1 sm:px-0">
-      <div className="flex-shrink-0 py-3 sm:py-4 border-b border-border px-1">
+      <div className="flex-shrink-0 py-3 sm:py-4 border-b border-border px-1 space-y-3">
         <div className="flex items-center justify-between gap-3">
           <div className="flex items-center gap-3">
             <div className="w-10 h-10 rounded-xl bg-primary/20 border border-primary/20 flex items-center justify-center">
@@ -163,7 +199,7 @@ export default function ChatPage() {
           {messages.length > 0 && (
             <button
               type="button"
-              onClick={handleClearHistory}
+              onClick={() => void handleClearHistory()}
               disabled={isTyping}
               className="flex items-center gap-1.5 text-xs text-muted-foreground hover:text-foreground px-2 py-1.5 rounded-lg hover:bg-muted/60 transition-colors"
               title="Limpar histórico"
@@ -173,6 +209,12 @@ export default function ChatPage() {
             </button>
           )}
         </div>
+        <ConsentGateBanner
+          purpose="ai_chat"
+          title="Autorização necessária para o chat"
+          description="Para usar o mentor de IA, autorize o tratamento de dados da finalidade Chat com IA (LGPD)."
+        />
+        <MentorCheckInsCard />
       </div>
 
       <div
@@ -231,7 +273,20 @@ export default function ChatPage() {
                       : 'bg-muted/60 border border-border text-foreground',
                   )}
                 >
-                  <p className="whitespace-pre-wrap">{msg.content}</p>
+                  {msg.role === 'assistant' ? (
+                    <ChatMessageContent content={msg.content} />
+                  ) : (
+                    <p className="whitespace-pre-wrap">{msg.content}</p>
+                  )}
+                  {msg.role === 'assistant' && msg.diagnosis && (
+                    <p className="text-[10px] text-muted-foreground mt-2">
+                      {msg.diagnosis.state.code} · {msg.diagnosis.state.label_pt} ·{' '}
+                      {msg.diagnosis.priority.title}
+                    </p>
+                  )}
+                  {msg.role === 'assistant' && msg.mentor && (
+                    <MentorStructuredCards mentor={msg.mentor} />
+                  )}
                 </div>
               </div>
             ))}
@@ -257,16 +312,16 @@ export default function ChatPage() {
             onKeyDown={handleKeyDown}
             placeholder="Mensagem para a Clareza..."
             rows={1}
-            disabled={isLoadingHistory}
+            disabled={isLoadingHistory || !hasConsent || consentLoading}
             className="flex-1 min-h-[44px] max-h-32 resize-none bg-transparent px-3 py-2.5 text-sm text-foreground placeholder:text-muted-foreground outline-none disabled:opacity-50"
           />
           <button
             type="button"
-            onClick={sendMessage}
-            disabled={!input.trim() || isTyping || isLoadingHistory}
+            onClick={() => void sendMessage()}
+            disabled={!input.trim() || isTyping || isLoadingHistory || !hasConsent}
             className={cn(
               'flex-shrink-0 w-10 h-10 rounded-xl flex items-center justify-center transition-all duration-200',
-              input.trim() && !isTyping && !isLoadingHistory
+              input.trim() && !isTyping && !isLoadingHistory && hasConsent
                 ? 'bg-primary text-primary-foreground hover:bg-primary/90'
                 : 'bg-muted/60 text-muted-foreground cursor-not-allowed',
             )}

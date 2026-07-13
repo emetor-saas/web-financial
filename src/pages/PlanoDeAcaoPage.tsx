@@ -5,6 +5,7 @@ import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { apiFetch } from '@/lib/apiClient';
 import { buildClientNarrative } from '@/lib/clientNarrative';
 import { fetchActionPlanProgress, saveActionPlanProgress } from '@/services/actionPlan';
+import { MentorCheckInsCard } from '@/components/MentorCheckInsCard';
 
 const anim = (i: number) => ({ initial: { opacity: 0, y: 15 }, animate: { opacity: 1, y: 0 }, transition: { delay: i * 0.05 } });
 
@@ -100,6 +101,10 @@ const PlanoDeAcaoPage = () => {
         <p className="text-sm text-muted-foreground"><strong>Contexto:</strong> {narrative.context}.</p>
         <p className="text-sm text-muted-foreground"><strong>Foco agora:</strong> {narrative.focus}.</p>
         <p className="text-sm text-muted-foreground"><strong>Próximo passo:</strong> {narrative.nextStep}.</p>
+      </motion.div>
+
+      <motion.div {...anim(1.5)}>
+        <MentorCheckInsCard />
       </motion.div>
 
       {/* Progress */}

@@ -61,7 +61,7 @@ const CasalPage = () => {
   });
 
   if (!isAuthenticated) return <Navigate to="/login" replace />;
-  if (!canAccessCasal) return <Navigate to="/app/jornada" replace />;
+  if (!canAccessCasal) return <Navigate to="/app/minha-casa" replace />;
 
   if (coupleLoading || !couple) {
     return (

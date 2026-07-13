@@ -53,7 +53,25 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       fetchMe()
         .then((me) => {
           if (me) {
-            setUser(me);
+            setUser((prev) => {
+              if (
+                prev &&
+                prev.id === me.id &&
+                prev.role === me.role &&
+                prev.householdId === me.householdId &&
+                prev.name === me.name &&
+                prev.email === me.email &&
+                prev.household?.subscriptionStatus === me.household?.subscriptionStatus &&
+                prev.household?.planCode === me.household?.planCode &&
+                prev.household?.isActive === me.household?.isActive &&
+                prev.billing?.canUseChat === me.billing?.canUseChat &&
+                prev.billing?.canUseApp === me.billing?.canUseApp &&
+                prev.billing?.hasPaidSubscription === me.billing?.hasPaidSubscription
+              ) {
+                return prev;
+              }
+              return me;
+            });
             setIsAuthenticated(true);
             setProfileType(mapRoleToProfileType(me.role));
             return;

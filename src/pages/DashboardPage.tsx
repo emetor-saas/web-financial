@@ -8,7 +8,7 @@ import { formatCurrency, getScoreColor, getScoreLabel } from '@/utils/formatters
 import { Link } from 'react-router-dom';
 import { useQuery } from '@tanstack/react-query';
 import { fetchDashboardStats } from '@/services/dashboard';
-import { fetchTransactionsForPeriod, type TransactionRow } from '@/services/transactions';
+import { fetchGoals } from '@/services/goals';
 import { apiFetch } from '@/lib/apiClient';
 import { buildClientNarrative } from '@/lib/clientNarrative';
 import { ThemeSwitcher } from '@/components/ThemeSwitcher';
@@ -16,7 +16,7 @@ import { NotificationsPanel } from '@/components/NotificationsPanel';
 import { fetchInAppAlerts } from '@/services/notifications';
 import { useAuth } from '@/context/AuthContext';
 import { useState } from 'react';
-import { Bell, ListTree } from 'lucide-react';
+import { Bell } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { useIsMobile } from '@/hooks/use-mobile';
 import type { Alert } from '@/types';
@@ -32,6 +32,7 @@ type DiagnosticPayload = {
   mainRisks: string[];
   mainPriorities: string[];
   summaryExecutive?: string[];
+  currentSituation?: { totalDebt?: number };
   onboardingAnswers?: {
     saldoMensal?: 'azul' | 'vermelho' | '';
     objetivosCurto?: string;
@@ -79,6 +80,12 @@ const DashboardPage = () => {
     queryFn: () => apiFetch<DiagnosticPayload>('/api/diagnostic/current'),
   });
 
+  const { data: goals } = useQuery({
+    queryKey: ['goals'],
+    queryFn: fetchGoals,
+  });
+
+  const topGoal = (goals ?? []).find((g) => !g.isAchieved) ?? (goals ?? [])[0] ?? null;
   const totalIncome = stats?.totalIncome ?? 0;
   const totalExpenses = stats?.totalExpenses ?? 0;
   const balance = stats?.balance ?? 0;
@@ -87,17 +94,6 @@ const DashboardPage = () => {
   const periodHasTransactions = stats?.periodHasTransactions === true;
   const estimatedFromDiagnostic = stats?.estimatedFromDiagnostic === true;
 
-  const { data: periodTransactions, isLoading: loadingTransactions } = useQuery({
-    queryKey: ['dashboard-period-transactions', periodMonth, periodYear],
-    queryFn: () => fetchTransactionsForPeriod({ month: periodMonth, year: periodYear, limit: 500 }),
-    enabled: usesTransactions,
-  });
-
-  const incomeRows = (periodTransactions ?? []).filter((row) => row.type === 'INCOME');
-  const expenseRows = (periodTransactions ?? []).filter((row) => row.type === 'EXPENSE');
-  const transferRows = (periodTransactions ?? []).filter((row) => row.type === 'TRANSFER');
-  const sumIncomeFromRows = incomeRows.reduce((sum, row) => sum + Math.abs(row.amount), 0);
-  const sumExpenseFromRows = expenseRows.reduce((sum, row) => sum + Math.abs(row.amount), 0);
   const auraScore = diagnostic?.auraScore?.score ?? 0;
   const riskBand = diagnostic?.auraScore?.band?.replace('_', ' ') ?? 'Aguardando dados';
   const narrative = buildClientNarrative(diagnostic ?? {}, 'dashboard');
@@ -238,97 +234,6 @@ const DashboardPage = () => {
           </div>
         </motion.div>
 
-        {usesTransactions && (
-          <motion.div {...anim(1)} className="card-solid rounded-2xl p-5 space-y-4">
-            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
-              <div className="flex items-center gap-2">
-                <ListTree size={18} className="text-primary" />
-                <div>
-                  <h3 className="font-semibold text-sm">Lançamentos que compõem o resumo</h3>
-                  <p className="text-xs text-muted-foreground">
-                    {monthLabel} — {incomeRows.length} receita(s), {expenseRows.length} despesa(s)
-                    {transferRows.length > 0 ? `, ${transferRows.length} transferência(s) (fora dos totais)` : ''}
-                  </p>
-                </div>
-              </div>
-              <div className="text-xs text-muted-foreground font-mono space-y-0.5 sm:text-right">
-                <div>Σ receitas: {formatCurrency(sumIncomeFromRows)}</div>
-                <div>Σ despesas: {formatCurrency(sumExpenseFromRows)}</div>
-              </div>
-            </div>
-
-            {loadingTransactions ? (
-              <p className="text-sm text-muted-foreground">Carregando lançamentos...</p>
-            ) : (periodTransactions ?? []).length === 0 ? (
-              <p className="text-sm text-muted-foreground">Nenhum lançamento confirmado neste período.</p>
-            ) : (
-              <div className="overflow-x-auto rounded-xl border border-border">
-                <table className="w-full text-xs sm:text-sm">
-                  <thead>
-                    <tr className="border-b border-border bg-muted/40">
-                      <th className="text-left py-2 px-2">Data</th>
-                      <th className="text-left py-2 px-2">Descrição</th>
-                      <th className="text-left py-2 px-2">Categoria</th>
-                      <th className="text-left py-2 px-2">Tipo</th>
-                      <th className="text-right py-2 px-2">Valor</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {(periodTransactions ?? []).map((row: TransactionRow) => (
-                      <tr key={row.id} className="border-b border-border/50 hover:bg-accent/20">
-                        <td className="py-2 px-2 whitespace-nowrap text-muted-foreground">
-                          {new Date(row.date).toLocaleDateString('pt-BR')}
-                        </td>
-                        <td className="py-2 px-2 max-w-[200px] truncate" title={row.description}>
-                          {row.description}
-                          {row.importJobId && (
-                            <span className="ml-1 text-[10px] text-muted-foreground">(import)</span>
-                          )}
-                        </td>
-                        <td className="py-2 px-2 text-muted-foreground">
-                          {row.category?.name ?? '—'}
-                        </td>
-                        <td className="py-2 px-2">
-                          <span
-                            className={cn(
-                              'rounded-full px-2 py-0.5 text-[10px] font-semibold',
-                              row.type === 'INCOME' && 'bg-emerald-500/15 text-emerald-600',
-                              row.type === 'EXPENSE' && 'bg-red-500/15 text-red-600',
-                              row.type === 'TRANSFER' && 'bg-blue-500/15 text-blue-600',
-                            )}
-                          >
-                            {row.type === 'INCOME' ? 'Receita' : row.type === 'EXPENSE' ? 'Despesa' : 'Transf.'}
-                          </span>
-                        </td>
-                        <td
-                          className={cn(
-                            'py-2 px-2 text-right font-mono font-medium',
-                            row.type === 'INCOME' && 'text-emerald-600',
-                            row.type === 'EXPENSE' && 'text-red-600',
-                            row.type === 'TRANSFER' && 'text-blue-600',
-                          )}
-                        >
-                          {formatCurrency(Math.abs(row.amount))}
-                        </td>
-                      </tr>
-                    ))}
-                  </tbody>
-                  <tfoot>
-                    <tr className="bg-muted/30 font-semibold">
-                      <td colSpan={4} className="py-2 px-2 text-right text-muted-foreground">
-                        Totais (receitas − despesas)
-                      </td>
-                      <td className="py-2 px-2 text-right font-mono">
-                        {formatCurrency(sumIncomeFromRows - sumExpenseFromRows)}
-                      </td>
-                    </tr>
-                  </tfoot>
-                </table>
-              </div>
-            )}
-          </motion.div>
-        )}
-
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
 
           <div className="lg:col-span-2 space-y-6">
@@ -367,8 +272,23 @@ const DashboardPage = () => {
 
               <div className="flex items-center gap-8 pt-3 border-t border-border">
                 <div>
-                  <span className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground block mb-0.5">Meta LIP</span>
-                  <span className="text-sm font-bold font-mono-nums text-foreground">R$ 30.000</span>
+                  <span className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground block mb-0.5">
+                    Meta principal
+                  </span>
+                  {topGoal ? (
+                    <Link to="/app/metas" className="block hover:opacity-80">
+                      <span className="text-sm font-bold font-mono-nums text-foreground">
+                        {formatCurrency(topGoal.targetAmount)}
+                      </span>
+                      <span className="text-[11px] text-muted-foreground block truncate max-w-[140px]">
+                        {topGoal.name}
+                      </span>
+                    </Link>
+                  ) : (
+                    <Link to="/app/metas" className="text-sm font-semibold text-primary hover:underline">
+                      Cadastrar meta
+                    </Link>
+                  )}
                 </div>
                 <div>
                   <span className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground block mb-0.5">Dívida Mapeada</span>

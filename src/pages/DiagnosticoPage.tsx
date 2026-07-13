@@ -136,6 +136,11 @@ const DiagnosticoPage = () => {
         <p className="text-muted-foreground text-sm mt-1">
           <span className={`font-semibold ${getScoreColor(auraScore)}`}>{getScoreLabel(auraScore)}</span>
         </p>
+        <p className="text-[11px] text-muted-foreground mt-3 max-w-lg mx-auto leading-relaxed">
+          O AURA é uma ferramenta educativa de saúde financeira — não é score de crédito, diagnóstico clínico nem
+          medida de valor pessoal. Mostra componentes do período analisado e tem limitações quando os dados são
+          parciais ou declarados.
+        </p>
         {usesTransactions && (
           <p className="text-xs text-emerald-700 dark:text-emerald-400 border border-emerald-500/30 rounded-xl px-4 py-3 mb-4">
             Renda, gastos e score calculados com base nos extratos importados. As respostas do diagnóstico inicial
@@ -162,6 +167,42 @@ const DiagnosticoPage = () => {
         <p className="text-sm text-muted-foreground"><strong>Foco agora:</strong> {narrative.focus}.</p>
         <p className="text-sm text-muted-foreground"><strong>Próximo passo:</strong> {narrative.nextStep}.</p>
       </motion.div>
+
+      {data?.skillDiagnosis && (
+        <motion.div {...anim(2)} className="card-solid rounded-2xl p-4 sm:p-6 space-y-4 border border-primary/20">
+          <div className="flex flex-wrap items-center gap-2">
+            <span className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground">Estado financeiro</span>
+            <span className="text-xs font-bold px-2.5 py-1 rounded-full bg-primary/10 text-primary border border-primary/20">
+              {data.skillDiagnosis.state.code} · {data.skillDiagnosis.state.label_pt}
+            </span>
+            {data.skillVersion && (
+              <span className="text-[10px] text-muted-foreground">Skill {data.skillVersion}</span>
+            )}
+          </div>
+          <div>
+            <p className="text-sm font-semibold text-foreground">Prioridade</p>
+            <p className="text-sm text-foreground mt-0.5">{data.skillDiagnosis.priority.title}</p>
+            <p className="text-xs text-muted-foreground mt-1">{data.skillDiagnosis.priority.reason}</p>
+          </div>
+          {Array.isArray(data.skillDiagnosis.findings) && data.skillDiagnosis.findings.length > 0 && (
+            <ul className="space-y-2">
+              {data.skillDiagnosis.findings.map((f: { type: string; statement: string }, idx: number) => (
+                <li key={idx} className="text-sm flex gap-2">
+                  <span className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground mt-0.5 shrink-0">
+                    {f.type === 'fact' ? 'Fato' : f.type === 'inference' ? 'Inferência' : 'Hipótese'}
+                  </span>
+                  <span className="text-foreground">{f.statement}</span>
+                </li>
+              ))}
+            </ul>
+          )}
+          {data.computedMetrics && (
+            <p className="text-[11px] text-muted-foreground border-t border-border pt-3">
+              AURA e indicadores são educativos (não score de crédito). Números vêm do motor determinístico do período analisado.
+            </p>
+          )}
+        </motion.div>
+      )}
 
       {/* MAPA DE DESEMPENHO — estilo referência */}
       <motion.div

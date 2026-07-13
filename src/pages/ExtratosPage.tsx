@@ -4,6 +4,7 @@ import { useNavigate } from 'react-router-dom';
 import { uploadImportFile, listImportJobs, ImportUploadError } from '@/services/importJobs';
 import { submitOpenFinanceInterest } from '@/services/actionPlan';
 import { toast } from 'sonner';
+import { ConsentGateBanner, useHasConsent } from '@/components/ConsentGateBanner';
 import { Upload, FileText, RefreshCw, ArrowRight } from 'lucide-react';
 
 const ExtratosPage = () => {
@@ -11,6 +12,7 @@ const ExtratosPage = () => {
   const navigate = useNavigate();
   const [uploading, setUploading] = useState(false);
   const [surveySent, setSurveySent] = useState(false);
+  const { hasConsent, isLoading: consentLoading } = useHasConsent('statement_import');
 
   const { data: jobs, isLoading, refetch } = useQuery({
     queryKey: ['import-jobs'],
@@ -20,6 +22,11 @@ const ExtratosPage = () => {
   const handleFileChange = async (event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0];
     if (!file) return;
+    if (!hasConsent) {
+      toast.error('Autorize a importação de extratos em Privacidade (LGPD) antes de enviar.');
+      event.target.value = '';
+      return;
+    }
     setUploading(true);
     try {
       await uploadImportFile(file);
@@ -32,6 +39,11 @@ const ExtratosPage = () => {
           error.details && typeof error.details === 'object'
             ? (error.details as Record<string, unknown>)
             : null;
+        if (details?.code === 'CONSENT_REQUIRED') {
+          toast.error('Autorize a finalidade de importação em Privacidade antes de continuar.');
+          await queryClient.invalidateQueries({ queryKey: ['privacy-consents'] });
+          return;
+        }
         const isTrialExpired = error.status === 402 || details?.code === 'trial_expired';
         if (isTrialExpired) {
           toast.error('Seu período de teste acabou. Assine um plano para continuar importando extratos.');
@@ -70,6 +82,11 @@ const ExtratosPage = () => {
       </header>
 
       <section className="card-solid rounded-2xl p-4 sm:p-6 space-y-4">
+        <ConsentGateBanner
+          purpose="statement_import"
+          title="Autorização necessária para importar"
+          description="Antes de enviar OFX/CSV/PDF, autorize o tratamento dos extratos (LGPD)."
+        />
         <div className="flex flex-col sm:flex-row justify-between sm:items-end gap-4">
           <div>
             <h2 className="font-display font-semibold tracking-tight flex items-center gap-2">
@@ -89,7 +106,13 @@ const ExtratosPage = () => {
               <RefreshCw size={14} />
               Atualizar lista
             </button>
-            <label className="inline-flex items-center justify-center gap-2 rounded-xl bg-primary text-primary-foreground px-4 py-2 text-xs font-semibold hover:bg-primary/90 cursor-pointer">
+            <label
+              className={`inline-flex items-center justify-center gap-2 rounded-xl px-4 py-2 text-xs font-semibold ${
+                !hasConsent || consentLoading || uploading
+                  ? 'bg-muted text-muted-foreground cursor-not-allowed opacity-70'
+                  : 'bg-primary text-primary-foreground hover:bg-primary/90 cursor-pointer'
+              }`}
+            >
               <Upload size={14} />
               {uploading ? 'Enviando...' : 'Enviar arquivo'}
               <input
@@ -97,7 +120,7 @@ const ExtratosPage = () => {
                 accept=".csv,.ofx,.pdf,.xls,.xlsx"
                 className="hidden"
                 onChange={handleFileChange}
-                disabled={uploading}
+                disabled={uploading || !hasConsent || consentLoading}
               />
             </label>
           </div>

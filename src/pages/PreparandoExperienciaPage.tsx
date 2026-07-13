@@ -35,7 +35,7 @@ const PreparandoExperienciaPage = () => {
       // Mantem breve espera para comunicar progresso ao usuario.
       await new Promise((resolve) => setTimeout(resolve, 2600));
       if (!active) return;
-      navigate('/app/jornada', { replace: true });
+      navigate('/app/minha-casa', { replace: true });
     };
 
     void warmup();

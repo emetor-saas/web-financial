@@ -5,8 +5,9 @@ import { formatCurrency, getScoreColor } from '@/utils/formatters';
 import { useMemo, useState } from 'react';
 import { AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, PieChart, Pie, Cell } from 'recharts';
 import { TrendingUp, AlertTriangle, Ticket, Settings, Search } from 'lucide-react';
-import { useQuery } from '@tanstack/react-query';
+import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { fetchMasterOverview, type MasterTenantRow } from '@/services/masterOverview';
+import { fetchSkillQuality, resolveSkillReview, commentSkillReview } from '@/services/skillQuality';
 
 const anim = (i: number) => ({ initial: { opacity: 0, y: 15 }, animate: { opacity: 1, y: 0 }, transition: { delay: i * 0.05 } });
 
@@ -30,15 +31,34 @@ function newTenantsByMonth(tenants: MasterTenantRow[]) {
 
 const AdminPage = () => {
   const { profileType, user } = useAuth();
-  const [tab, setTab] = useState<'overview' | 'users' | 'cohorts' | 'support' | 'settings'>('overview');
+  const [tab, setTab] = useState<'overview' | 'users' | 'cohorts' | 'support' | 'skill' | 'settings'>('overview');
   const [searchQuery, setSearchQuery] = useState('');
   const [statusFilter, setStatusFilter] = useState<'all' | 'active' | 'inactive'>('all');
+  const queryClient = useQueryClient();
 
   const { data, isLoading, isError } = useQuery({
     queryKey: ['master-overview'],
     queryFn: fetchMasterOverview,
     enabled: profileType === 'ADMIN',
   });
+
+  const { data: skillQuality } = useQuery({
+    queryKey: ['skill-quality'],
+    queryFn: fetchSkillQuality,
+    enabled: profileType === 'ADMIN' && tab === 'skill',
+  });
+
+  const resolveMutation = useMutation({
+    mutationFn: resolveSkillReview,
+    onSuccess: () => queryClient.invalidateQueries({ queryKey: ['skill-quality'] }),
+  });
+
+  const commentMutation = useMutation({
+    mutationFn: commentSkillReview,
+    onSuccess: () => queryClient.invalidateQueries({ queryKey: ['skill-quality'] }),
+  });
+
+  const [reviewNotes, setReviewNotes] = useState<Record<string, string>>({});
 
   const tenants = profileType === 'ADMIN' ? (data?.tenants ?? []) : [];
   const metrics = profileType === 'ADMIN' ? data?.metrics : undefined;
@@ -96,11 +116,12 @@ const AdminPage = () => {
     { id: 'overview' as const, label: 'Visão geral' },
     { id: 'users' as const, label: 'Tenants' },
     { id: 'cohorts' as const, label: 'Planos' },
+    { id: 'skill' as const, label: 'Skill IA' },
     { id: 'support' as const, label: 'Suporte' },
     { id: 'settings' as const, label: 'Configurações' },
   ];
 
-  if (profileType !== 'ADMIN') return <Navigate to="/app/jornada" replace />;
+  if (profileType !== 'ADMIN') return <Navigate to="/app/minha-casa" replace />;
 
   if (isLoading) {
     return (
@@ -383,6 +404,172 @@ const AdminPage = () => {
                   ))}
                 </tbody>
               </table>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {tab === 'skill' && (
+        <div className="space-y-6">
+          <p className="text-sm text-muted-foreground">
+            Qualidade da Skill FIN_HEALTH_MENTOR_BR ({skillQuality?.skillVersion ?? '…'}) — últimos{' '}
+            {skillQuality?.windowDays ?? 30} dias.
+          </p>
+          {(skillQuality?.alerts?.passRateLow || (skillQuality?.alerts?.overdueHumanReviews ?? 0) > 0) && (
+            <div className="rounded-xl border border-amber-500/40 bg-amber-500/10 px-4 py-3 text-sm">
+              {skillQuality?.alerts?.passRateLow ? (
+                <p>Pass rate abaixo do limiar — revisar prompts/crítico.</p>
+              ) : null}
+              {(skillQuality?.alerts?.overdueHumanReviews ?? 0) > 0 ? (
+                <p>{skillQuality?.alerts?.overdueHumanReviews} ticket(s) com SLA vencido.</p>
+              ) : null}
+            </div>
+          )}
+          <div className="grid grid-cols-2 lg:grid-cols-3 gap-4">
+            {[
+              { label: 'Interações', value: String(skillQuality?.totals.interactions ?? 0) },
+              {
+                label: 'Pass rate',
+                value: `${((skillQuality?.totals.passRate ?? 0) * 100).toFixed(1)}%`,
+              },
+              {
+                label: 'Guardian blocks',
+                value: `${((skillQuality?.totals.guardianBlockRate ?? 0) * 100).toFixed(1)}%`,
+              },
+              {
+                label: 'Fallbacks',
+                value: `${((skillQuality?.totals.fallbackRate ?? 0) * 100).toFixed(1)}%`,
+              },
+              {
+                label: 'Custo est. (USD)',
+                value: (skillQuality?.totals.estimatedCostUsd ?? 0).toFixed(4),
+              },
+              {
+                label: 'Fila humana',
+                value: String(skillQuality?.pendingHumanReviews.length ?? 0),
+              },
+            ].map((kpi) => (
+              <div key={kpi.label} className="bg-card border border-border rounded-xl p-4">
+                <span className="text-xs font-bold text-muted-foreground uppercase">{kpi.label}</span>
+                <p className="text-xl font-display font-bold mt-1 tabular-nums">{kpi.value}</p>
+              </div>
+            ))}
+          </div>
+
+          <div className="bg-card border border-border rounded-xl p-4">
+            <h3 className="font-display font-semibold mb-3">Distribuição de estados E0–E6</h3>
+            <div className="flex flex-wrap gap-2">
+              {Object.entries(skillQuality?.stateDistribution ?? {}).map(([code, count]) => (
+                <span key={code} className="text-xs px-2 py-1 rounded-full bg-muted border border-border">
+                  {code}: {count}
+                </span>
+              ))}
+              {!skillQuality?.stateDistribution ||
+              Object.keys(skillQuality.stateDistribution).length === 0 ? (
+                <span className="text-sm text-muted-foreground">Sem dados ainda.</span>
+              ) : null}
+            </div>
+          </div>
+
+          <div className="bg-card border border-border rounded-xl overflow-hidden">
+            <div className="p-4 border-b border-border">
+              <h3 className="font-display font-semibold">Fila de revisão humana</h3>
+            </div>
+            <div className="divide-y divide-border">
+              {(skillQuality?.pendingHumanReviews ?? []).length === 0 ? (
+                <p className="p-4 text-sm text-muted-foreground">Nenhum ticket pendente.</p>
+              ) : (
+                skillQuality?.pendingHumanReviews.map((row) => (
+                  <div key={row.ticket.id} className="p-4 space-y-3">
+                    <div className="flex flex-col sm:flex-row sm:items-start gap-3 justify-between">
+                      <div>
+                        <p className="text-sm font-medium">
+                          {row.householdName}
+                          {row.overdue ? (
+                            <span className="ml-2 text-[10px] uppercase tracking-wide text-amber-700 dark:text-amber-400">
+                              SLA vencido
+                            </span>
+                          ) : null}
+                        </p>
+                        <p className="text-xs text-muted-foreground">{row.ticket.reason}</p>
+                        <p className="text-[10px] text-muted-foreground mt-1">
+                          {row.ticket.diagnosisState ?? '—'} ·{' '}
+                          {new Date(row.ticket.createdAt).toLocaleString('pt-BR')}
+                          {row.ticket.slaDueAt
+                            ? ` · SLA ${new Date(row.ticket.slaDueAt).toLocaleString('pt-BR')}`
+                            : ''}
+                        </p>
+                        {(row.ticket.comments ?? []).length > 0 ? (
+                          <ul className="mt-2 space-y-1">
+                            {row.ticket.comments?.map((c) => (
+                              <li key={c.id} className="text-[11px] text-muted-foreground">
+                                <span className="font-medium text-foreground">{c.authorName ?? 'Master'}:</span>{' '}
+                                {c.body}
+                              </li>
+                            ))}
+                          </ul>
+                        ) : null}
+                      </div>
+                      <div className="flex gap-2">
+                        <button
+                          type="button"
+                          className="text-xs font-semibold px-3 py-1.5 rounded-lg bg-primary text-primary-foreground"
+                          disabled={resolveMutation.isPending}
+                          onClick={() =>
+                            resolveMutation.mutate({
+                              householdId: row.householdId,
+                              ticketId: row.ticket.id,
+                              status: 'resolved',
+                              note: reviewNotes[row.ticket.id],
+                            })
+                          }
+                        >
+                          Resolver
+                        </button>
+                        <button
+                          type="button"
+                          className="text-xs font-semibold px-3 py-1.5 rounded-lg border border-border"
+                          disabled={resolveMutation.isPending}
+                          onClick={() =>
+                            resolveMutation.mutate({
+                              householdId: row.householdId,
+                              ticketId: row.ticket.id,
+                              status: 'dismissed',
+                              note: reviewNotes[row.ticket.id],
+                            })
+                          }
+                        >
+                          Dispensar
+                        </button>
+                      </div>
+                    </div>
+                    <div className="flex flex-col sm:flex-row gap-2">
+                      <input
+                        className="flex-1 rounded-lg border border-border bg-background px-3 py-1.5 text-xs"
+                        placeholder="Nota / comentário"
+                        value={reviewNotes[row.ticket.id] ?? ''}
+                        onChange={(e) =>
+                          setReviewNotes((prev) => ({ ...prev, [row.ticket.id]: e.target.value }))
+                        }
+                      />
+                      <button
+                        type="button"
+                        className="text-xs font-semibold px-3 py-1.5 rounded-lg border border-border"
+                        disabled={commentMutation.isPending || !(reviewNotes[row.ticket.id] ?? '').trim()}
+                        onClick={() =>
+                          commentMutation.mutate({
+                            householdId: row.householdId,
+                            ticketId: row.ticket.id,
+                            body: reviewNotes[row.ticket.id],
+                          })
+                        }
+                      >
+                        Comentar
+                      </button>
+                    </div>
+                  </div>
+                ))
+              )}
             </div>
           </div>
         </div>

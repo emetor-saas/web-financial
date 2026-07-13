@@ -9,6 +9,7 @@ import { fetchProfile, patchProfile, uploadProfileAvatar } from '@/services/prof
 import { fetchHouseholdUsers } from '@/services/householdUsers';
 import { fetchGoals } from '@/services/goals';
 import { apiFetch } from '@/lib/apiClient';
+import { PrivacyConsentsCard } from '@/components/PrivacyConsentsCard';
 
 const anim = (i: number) => ({ initial: { opacity: 0, y: 15 }, animate: { opacity: 1, y: 0 }, transition: { delay: i * 0.05 } });
 
@@ -320,6 +321,8 @@ const PerfilPage = () => {
           granulares (e-mail, relatórios) serão configuráveis aqui em uma próxima versão.
         </p>
       </motion.div>
+
+      <PrivacyConsentsCard />
 
       <motion.div {...anim(4)} className="bg-card border border-border rounded-xl p-6 space-y-4">
         <h3 className="font-display font-semibold flex items-center gap-2">

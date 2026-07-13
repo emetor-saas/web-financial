@@ -2,7 +2,7 @@ import { useLocation, useNavigate, Link } from 'react-router-dom';
 import { useAuth } from '@/context/AuthContext';
 import {
   LayoutDashboard, Activity, ShieldCheck, CreditCard, Target,
-  BrainCircuit, User, Users, Settings, LogOut, ChevronLeft, ChevronRight, Sparkles, FileUp, Crown, Lock, ChevronUp, Compass, List,
+  BrainCircuit, User, Users, Settings, LogOut, ChevronLeft, ChevronRight, Sparkles, FileUp, Crown, Lock, ChevronUp, List, Castle, Calculator, Tags,
 } from 'lucide-react';
 import { useState } from 'react';
 import { cn } from '@/lib/utils';
@@ -10,15 +10,17 @@ import { tenantCanUseChat } from '@/lib/billing';
 import { toast } from 'sonner';
 
 const NAV_ITEMS = [
-  { label: 'Minha Jornada', path: '/app/jornada', icon: Compass, roles: ['SINGLE', 'COUPLE', 'ADMIN'] },
+  { label: 'Minha Casa', path: '/app/minha-casa', icon: Castle, roles: ['SINGLE', 'COUPLE', 'ADMIN'] },
   { label: 'Dashboard', path: '/app/dashboard', icon: LayoutDashboard, roles: ['SINGLE', 'COUPLE', 'ADMIN'] },
   { label: 'Chat IA', path: '/app/chat', icon: Sparkles, roles: ['SINGLE', 'COUPLE', 'ADMIN'] },
   { label: 'Diagnóstico', path: '/app/diagnostico', icon: Activity, roles: ['SINGLE', 'COUPLE'] },
   { label: 'Plano de Ação', path: '/app/plano-de-acao', icon: ShieldCheck, roles: ['SINGLE', 'COUPLE'] },
   { label: 'Dívidas', path: '/app/dividas', icon: CreditCard, roles: ['SINGLE', 'COUPLE'] },
+  { label: 'Simuladores', path: '/app/simuladores', icon: Calculator, roles: ['SINGLE', 'COUPLE'] },
   { label: 'Metas', path: '/app/metas', icon: Target, roles: ['SINGLE', 'COUPLE'] },
   { label: 'Insights IA', path: '/app/insights', icon: BrainCircuit, roles: ['SINGLE', 'COUPLE'] },
   { label: 'Lançamentos', path: '/app/lancamentos', icon: List, roles: ['SINGLE', 'COUPLE', 'ADMIN'] },
+  { label: 'Categorias', path: '/app/categorias', icon: Tags, roles: ['SINGLE', 'COUPLE', 'ADMIN'] },
   { label: 'Importar extrato', path: '/app/extratos', icon: FileUp, roles: ['SINGLE', 'COUPLE', 'ADMIN'] },
   { label: 'Planos', path: '/app/planos', icon: Crown, roles: ['SINGLE', 'COUPLE', 'ADMIN'] },
   { label: 'Espaço Casal', path: '/app/casal', icon: Users, roles: ['SINGLE', 'COUPLE'], requiresMultiTenant: true },
@@ -49,7 +51,7 @@ export const AppSidebar = () => {
       collapsed ? "w-16" : "w-56"
     )}>
       <div className="px-4 py-5 flex items-center justify-between border-b border-border">
-        <Link to="/app/jornada" className="flex flex-col gap-0 transition-opacity duration-200 hover:opacity-80">
+        <Link to="/app/minha-casa" className="flex flex-col gap-0 transition-opacity duration-200 hover:opacity-80">
           {!collapsed && (
             <>
               <span className="font-display font-black text-base text-foreground tracking-tight leading-none">CLAREZA</span>

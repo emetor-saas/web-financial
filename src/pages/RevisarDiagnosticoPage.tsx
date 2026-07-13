@@ -7,14 +7,16 @@ import { fetchOnboardingAnswers } from '@/services/actionPlan';
 const LABELS: Record<string, string> = {
   rendaLiquida: 'Renda líquida mensal',
   custosFixos: 'Custos fixos',
-  categoriaVariavel: 'Categoria variável crítica',
-  saldoMensal: 'Saldo mensal habitual',
-  mapaDividas: 'Mapa de dívidas',
+  categoriaVariavel: 'Gastos variáveis críticos',
+  saldoMensal: 'Como o mês fecha',
+  situacaoDividas: 'Situação das dívidas',
+  dividasEmAtraso: 'Dívidas em atraso',
   reservaEmergencia: 'Reserva de emergência',
   objetivosCurto: 'Objetivos de curto prazo',
   objetivosLongo: 'Objetivos de longo prazo',
   perfilRisco: 'Perfil de risco',
-  bombasProgramadas: 'Gastos extraordinários previstos',
+  bombasProgramadas: 'Grandes gastos previstos',
+  mapaDividas: 'Mapa de dívidas',
 };
 
 export default function RevisarDiagnosticoPage() {
@@ -38,7 +40,21 @@ export default function RevisarDiagnosticoPage() {
     );
   }
 
-  const entries = Object.entries(answers).filter(([, v]) => v != null && String(v).trim() !== '');
+  const display =
+    answers._display && typeof answers._display === 'object'
+      ? (answers._display as Record<string, string>)
+      : null;
+
+  const entries = display
+    ? Object.entries(display).filter(([, v]) => v?.trim())
+    : Object.entries(answers).filter(
+        ([key, v]) =>
+          !key.startsWith('_') &&
+          key !== 'version' &&
+          v != null &&
+          String(v).trim() !== '' &&
+          !Array.isArray(v),
+      );
 
   return (
     <div className="p-4 sm:p-6 lg:p-8 max-w-2xl mx-auto space-y-6">

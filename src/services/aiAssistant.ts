@@ -15,6 +15,31 @@ export interface AiAssistantResponse {
   hasOpenAI: boolean;
   userMessageId?: string;
   assistantMessageId?: string;
+  skillVersion?: string;
+  mentor?: {
+    schema_version: string;
+    message_markdown: string;
+    primary_action: {
+      title: string;
+      due_date: string | null;
+      amount_brl: number | null;
+      completion_criteria: string;
+    };
+    thirty_day_plan: Array<{ step: string; metric?: string }>;
+    questions: string[];
+    disclosures: string[];
+    requires_human_review: boolean;
+  } | null;
+  diagnosis?: {
+    state: { code: string; label_pt: string };
+    priority: { title: string; reason: string; rank: number };
+    findings: Array<{ type: string; statement: string }>;
+  } | null;
+  guardian?: {
+    decision: string;
+    reasons: string[];
+    human_review: boolean;
+  };
 }
 
 export interface AiChatMessage {

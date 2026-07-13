@@ -40,8 +40,21 @@ export async function apiFetch<T = unknown>(
   });
 
   if (!res.ok) {
-    // Evita expor detalhes internos da API para o usuário final.
-    throw new Error(buildUserFacingErrorMessage(res.status));
+    let message = buildUserFacingErrorMessage(res.status);
+    let details: unknown;
+    try {
+      const payload = (await res.json()) as { error?: string; details?: unknown };
+      if (payload?.error && typeof payload.error === 'string' && payload.error.length < 240) {
+        message = payload.error;
+      }
+      details = payload?.details;
+    } catch {
+      /* ignore */
+    }
+    const err = new Error(message) as Error & { status?: number; details?: unknown };
+    err.status = res.status;
+    err.details = details;
+    throw err;
   }
 
   // 204 No Content
