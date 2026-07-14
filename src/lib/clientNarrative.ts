@@ -1,10 +1,11 @@
 export type NarrativeStage = 'dashboard' | 'diagnostico' | 'insights' | 'plano';
 
 type OnboardingAnswers = {
-  saldoMensal?: 'azul' | 'vermelho' | '';
-  objetivosCurto?: string;
-  objetivosLongo?: string;
+  saldoMensal?: 'azul' | 'vermelho' | 'empate' | string;
+  objetivosCurto?: string | string[];
+  objetivosLongo?: string | string[];
   mapaDividas?: string;
+  _display?: Record<string, string>;
 };
 
 export type DiagnosticNarrativeInput = {
@@ -16,15 +17,36 @@ export type DiagnosticNarrativeInput = {
   onboardingAnswers?: OnboardingAnswers | null;
 };
 
+/** Onboarding v2 guarda arrays de IDs; v1 usava texto livre. */
+function asDisplayText(value: unknown): string | undefined {
+  if (typeof value === 'string') {
+    const t = value.trim();
+    return t || undefined;
+  }
+  if (Array.isArray(value)) {
+    const parts = value
+      .map((item) => (typeof item === 'string' ? item.trim() : String(item ?? '').trim()))
+      .filter(Boolean);
+    return parts.length > 0 ? parts.join(', ') : undefined;
+  }
+  return undefined;
+}
+
 export function buildClientNarrative(input: DiagnosticNarrativeInput, stage: NarrativeStage) {
   const onboarding = input.onboardingAnswers;
-  const shortGoal = onboarding?.objetivosCurto?.trim();
-  const longGoal = onboarding?.objetivosLongo?.trim();
-  const debtContext = onboarding?.mapaDividas?.trim();
+  const display = onboarding?._display;
+
+  const shortGoal =
+    asDisplayText(display?.objetivosCurto) || asDisplayText(onboarding?.objetivosCurto);
+  const longGoal =
+    asDisplayText(display?.objetivosLongo) || asDisplayText(onboarding?.objetivosLongo);
+  const debtContext =
+    asDisplayText(display?.mapaDividas) || asDisplayText(onboarding?.mapaDividas);
 
   const contextParts: string[] = [];
   if (onboarding?.saldoMensal === 'vermelho') contextParts.push('você informou que o mês tende a fechar no vermelho');
   if (onboarding?.saldoMensal === 'azul') contextParts.push('você informou que já fecha o mês no azul');
+  if (onboarding?.saldoMensal === 'empate') contextParts.push('você informou que o mês costuma fechar no zero');
   if (shortGoal) contextParts.push(`seu foco de curto prazo é "${shortGoal}"`);
   if (longGoal) contextParts.push(`seu objetivo de longo prazo é "${longGoal}"`);
   if (debtContext) contextParts.push(`você mapeou dívidas como "${debtContext}"`);
@@ -35,7 +57,10 @@ export function buildClientNarrative(input: DiagnosticNarrativeInput, stage: Nar
   const focus =
     input.mainPriorities?.[0] ||
     'organizar o fluxo do mês para aumentar previsibilidade e reduzir pressão financeira';
-  const nextStep = input.actionPlan?.today?.[0] || input.actionPlan?.next7Days?.[0] || 'executar uma ação prática ainda hoje para ganhar tração';
+  const nextStep =
+    input.actionPlan?.today?.[0] ||
+    input.actionPlan?.next7Days?.[0] ||
+    'executar uma ação prática ainda hoje para ganhar tração';
 
   const stageTitle =
     stage === 'dashboard'
