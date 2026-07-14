@@ -77,47 +77,58 @@ const TenantPlansSection = () => {
   });
 
   const openBillingPortalInNewTab = () => {
-    const tab = window.open('about:blank', '_blank', 'noopener,noreferrer');
-    if (!tab) {
-      toast.error('Permita pop-ups neste site para abrir o portal em nova guia.');
-      return;
-    }
-    void portalMutation.mutateAsync().then(
-      (res) => {
-        if (res.url) {
-          tab.opener = null;
-          tab.location.href = res.url;
-        } else {
-          tab.close();
+    void (async () => {
+      // Abrir cedo (gesto do usuário) sem noopener — senão a aba fica em about:blank
+      // e o browser devolve null / impede navegar para o Stripe.
+      const tab = window.open('about:blank', '_blank');
+      try {
+        const res = await portalMutation.mutateAsync();
+        if (!res.url) {
+          tab?.close();
           toast.error('Não foi possível abrir o portal.');
+          return;
         }
-      },
-      () => {
-        tab.close();
-      },
-    );
+        if (tab && !tab.closed) {
+          tab.location.href = res.url;
+          try {
+            tab.opener = null;
+          } catch {
+            /* ignore */
+          }
+        } else {
+          window.location.assign(res.url);
+        }
+      } catch {
+        tab?.close();
+      }
+    })();
   };
 
   const openCheckoutInNewTab = (priceId: string) => {
-    const tab = window.open('about:blank', '_blank', 'noopener,noreferrer');
-    if (!tab) {
-      toast.error('Permita pop-ups neste site para abrir o checkout em nova guia.');
-      return;
-    }
-    checkoutMutation.mutate(priceId, {
-      onSuccess: (res) => {
-        if (res.url && tab) {
-          tab.opener = null;
-          tab.location.href = res.url;
-        } else {
+    void (async () => {
+      const tab = window.open('about:blank', '_blank');
+      try {
+        const res = await checkoutMutation.mutateAsync(priceId);
+        if (!res.url) {
           tab?.close();
           toast.error('Não foi possível abrir o checkout.');
+          return;
         }
-      },
-      onError: () => {
+        if (tab && !tab.closed) {
+          tab.location.href = res.url;
+          try {
+            tab.opener = null;
+          } catch {
+            /* ignore */
+          }
+        } else {
+          // Popup bloqueado: mesmo fluxo Stripe na guia atual
+          window.location.assign(res.url);
+        }
+      } catch {
         tab?.close();
-      },
-    });
+      }
+    })();
   };
 
   return (
