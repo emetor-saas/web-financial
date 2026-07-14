@@ -113,7 +113,7 @@ const CasalPage = () => {
         <div>
           <h1 className="font-display text-2xl lg:text-3xl font-bold">Espaço do Casal</h1>
           <p className="text-muted-foreground text-sm">
-            {couple.householdName} — Gestão financeira compartilhada.
+            {couple.householdName}. Gestão financeira compartilhada.
           </p>
         </div>
       </motion.div>
@@ -127,7 +127,7 @@ const CasalPage = () => {
             Alinhamento financeiro do casal
           </p>
           <p className="text-sm">
-            <span className="font-semibold">{alignmentLabel}</span> — {couple.mainTension}
+            <span className="font-semibold">{alignmentLabel}</span>: {couple.mainTension}
           </p>
           <p className="text-xs text-muted-foreground">
             Próxima decisão em conjunto:{' '}
@@ -203,7 +203,7 @@ const CasalPage = () => {
           <div className="w-12 h-12 bg-primary/20 rounded-full flex items-center justify-center mx-auto mb-3">
             <Users size={20} className="text-primary" />
           </div>
-          <h3 className="font-display font-semibold">Clareza — família</h3>
+          <h3 className="font-display font-semibold">Clareza da família</h3>
           <p className={`text-3xl font-display font-black tabular-nums mt-1 ${getScoreColor(couple.jointAuraScore)}`}>
             {couple.jointAuraScore}
           </p>
@@ -391,7 +391,7 @@ const CasalPage = () => {
       <motion.div {...anim(8)} className="bg-card border border-border rounded-xl p-6">
         <div className="flex items-center gap-2 mb-4">
           <MessageCircle size={18} className="text-primary" />
-          <h3 className="font-display font-semibold">Conversa do mês — perguntas guiadas</h3>
+          <h3 className="font-display font-semibold">Conversa do mês: perguntas guiadas</h3>
         </div>
         <div className="space-y-3">
           {conversaQuestions.map((q, i) => (

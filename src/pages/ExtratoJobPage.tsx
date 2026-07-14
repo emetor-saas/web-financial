@@ -328,7 +328,7 @@ const ExtratoJobPage = () => {
         <div className="rounded-xl border border-amber-500/30 bg-amber-500/10 px-4 py-3 text-sm space-y-2">
           <p className="font-medium text-foreground">Nenhuma linha foi extraída deste arquivo.</p>
           <ul className="list-disc pl-5 text-muted-foreground space-y-1">
-            <li>PDFs de banco costumam falhar — prefira exportar <strong>OFX</strong> ou <strong>CSV</strong>.</li>
+            <li>PDFs de banco costumam falhar. Prefira exportar <strong>OFX</strong> ou <strong>CSV</strong>.</li>
             <li>Se usa IA, confira créditos da OpenAI no <code className="text-xs">OPENAI_API_KEY</code>.</li>
             <li>PDF escaneado (imagem) não é lido automaticamente.</li>
           </ul>
@@ -350,7 +350,7 @@ const ExtratoJobPage = () => {
           <p className="font-medium text-foreground">Pré-organização por IA</p>
           <p className="mt-1">
             A IA separou data, valor e descrição para facilitar a revisão. Confira cada linha antes de
-            importar — especialmente as de confiança baixa
+            importar, especialmente as de confiança baixa
             {lowConfidenceRows > 0 ? ` (${lowConfidenceRows})` : ''}.
           </p>
         </div>
@@ -461,7 +461,7 @@ const ExtratoJobPage = () => {
                         IA{' '}
                         {typeof row.review.parseConfidence === 'number'
                           ? `${Math.round(row.review.parseConfidence * 100)}%`
-                          : '—'}
+                          : '-'}
                       </span>
                     ) : (
                       <span className="text-[10px]">Padrão</span>

@@ -92,7 +92,7 @@ const PlanoDeAcaoPage = () => {
   return (
     <div className="p-4 sm:p-6 lg:p-8 space-y-6 max-w-4xl mx-auto">
       <motion.div {...anim(0)}>
-        <h1 className="font-display text-2xl sm:text-3xl font-bold">Plano de Ação — 30 Dias</h1>
+        <h1 className="font-display text-2xl sm:text-3xl font-bold">Plano de ação (30 dias)</h1>
         <p className="text-muted-foreground text-sm mt-1">Ações priorizadas para melhorar sua saúde financeira.</p>
       </motion.div>
 

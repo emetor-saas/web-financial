@@ -514,7 +514,7 @@ export default function MinhaCasaPage() {
                   <span className="text-primary">{gamification.totalXp} XP total</span>
                   <span className="text-muted-foreground">·</span>
                   <span className="text-muted-foreground">
-                    Nível {gamification.level} — {gamification.levelTitle}
+                    Nível {gamification.level}: {gamification.levelTitle}
                   </span>
                   <span className="text-muted-foreground">·</span>
                   <span className="inline-flex items-center gap-1 text-amber-500">

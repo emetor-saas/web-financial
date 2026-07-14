@@ -62,7 +62,7 @@ export default function RevisarDiagnosticoPage() {
         <p className="text-[10px] font-bold uppercase tracking-widest text-primary">Diagnóstico</p>
         <h1 className="font-display text-2xl font-black tracking-tight">O que você nos contou</h1>
         <p className="text-sm text-muted-foreground">
-          Esta é uma leitura do seu diagnóstico — sem alterar respostas por engano. Para atualizar, use o botão abaixo.
+          Esta é uma leitura do seu diagnóstico, sem alterar respostas por engano. Para atualizar, use o botão abaixo.
         </p>
       </motion.header>
 

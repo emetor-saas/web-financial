@@ -30,7 +30,7 @@ export function MonthlyHealthReportDialog({ open, onOpenChange }: MonthlyHealthR
     win.document.write(`
       <!DOCTYPE html>
       <html><head>
-        <title>Saúde da casa — ${data?.period.label ?? ''}</title>
+        <title>Saúde da casa: ${data?.period.label ?? ''}</title>
         <style>
           body { font-family: system-ui, sans-serif; padding: 32px; color: #111; max-width: 720px; margin: 0 auto; }
           h1 { font-size: 1.5rem; margin-bottom: 4px; }
@@ -56,7 +56,7 @@ export function MonthlyHealthReportDialog({ open, onOpenChange }: MonthlyHealthR
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
         <DialogHeader>
-          <DialogTitle>Relatório — saúde da casa</DialogTitle>
+          <DialogTitle>Relatório de saúde da casa</DialogTitle>
         </DialogHeader>
 
         {isLoading || !data ? (

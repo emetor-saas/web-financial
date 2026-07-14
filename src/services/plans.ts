@@ -31,7 +31,7 @@ export async function chooseFreePlan(planCode: string) {
   });
 }
 
-/** Abre o Stripe Customer Portal (cartão, faturas, cancelamento — conforme configuração no Stripe). */
+/** Abre o Stripe Customer Portal (cartão, faturas, cancelamento conforme configuração no Stripe). */
 export async function createBillingPortalSession() {
   return apiFetch<{ url: string }>('/api/billing/portal', {
     method: 'POST',

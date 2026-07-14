@@ -231,7 +231,7 @@ const InsightsPage = () => {
                 Estado financeiro
               </p>
               <h2 className="font-display text-lg font-semibold mt-0.5">
-                {skill.state.code} — {skill.state.label_pt}
+                {skill.state.code}: {skill.state.label_pt}
               </h2>
             </div>
             <Link

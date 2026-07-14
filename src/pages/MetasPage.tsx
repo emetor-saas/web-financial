@@ -2,9 +2,9 @@ import { useState } from 'react';
 import { motion } from 'framer-motion';
 import { formatCurrency, getStatusColor } from '@/utils/formatters';
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
-import { Target, TrendingUp, AlertCircle, Plus, Loader2 } from 'lucide-react';
+import { Target, TrendingUp, AlertCircle, Plus, Loader2, Pencil } from 'lucide-react';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
-import { createGoal, fetchGoals, type Goal } from '@/services/goals';
+import { createGoal, fetchGoals, updateGoal, type Goal } from '@/services/goals';
 import { toast } from '@/hooks/use-toast';
 import {
   Dialog,
@@ -20,9 +20,12 @@ const anim = (i: number) => ({
   transition: { delay: i * 0.05 },
 });
 
-type GoalStatus = 'on-track' | 'warning' | 'behind' | 'completed';
+type GoalStatus = 'on-track' | 'warning' | 'behind' | 'completed' | 'incomplete';
 
-/** Viabilidade da meta: progresso + aporte vs prazo. */
+/**
+ * Status baseado só em dados informados pelo usuário.
+ * Sem aporte/prazo: incompleto (não inventa "viável").
+ */
 function computeStatus(goal: Goal, progress: number): GoalStatus {
   if (goal.isAchieved || progress >= 100) return 'completed';
 
@@ -37,18 +40,49 @@ function computeStatus(goal: Goal, progress: number): GoalStatus {
     return 'behind';
   }
 
-  if (progress >= 70) return 'on-track';
-  if (progress >= 40) return 'warning';
-  return 'behind';
+  return 'incomplete';
 }
 
-const emptyForm = {
+type GoalFormState = {
+  name: string;
+  targetAmount: string;
+  currentAmount: string;
+  monthlyContribution: string;
+  targetDate: string;
+};
+
+const emptyForm: GoalFormState = {
   name: '',
   targetAmount: '',
   currentAmount: '',
   monthlyContribution: '',
   targetDate: '',
 };
+
+function goalToForm(goal: Goal): GoalFormState {
+  return {
+    name: goal.name,
+    targetAmount: String(goal.targetAmount),
+    currentAmount: String(goal.currentAmount ?? 0),
+    monthlyContribution:
+      goal.monthlyContribution != null ? String(goal.monthlyContribution) : '',
+    targetDate: goal.targetDate ? goal.targetDate.slice(0, 10) : '',
+  };
+}
+
+function parseFormPayload(form: GoalFormState) {
+  const targetAmount = Number(String(form.targetAmount).replace(',', '.'));
+  return {
+    name: form.name.trim(),
+    targetAmount,
+    currentAmount: Number(String(form.currentAmount).replace(',', '.')) || 0,
+    monthlyContribution: form.monthlyContribution
+      ? Number(String(form.monthlyContribution).replace(',', '.'))
+      : null,
+    targetDate: form.targetDate || null,
+    description: null as string | null,
+  };
+}
 
 const MetasPage = () => {
   const queryClient = useQueryClient();
@@ -57,15 +91,21 @@ const MetasPage = () => {
     queryFn: fetchGoals,
   });
   const [open, setOpen] = useState(false);
-  const [form, setForm] = useState(emptyForm);
+  const [editingId, setEditingId] = useState<string | null>(null);
+  const [form, setForm] = useState<GoalFormState>(emptyForm);
+
+  const invalidateGoalQueries = () => {
+    queryClient.invalidateQueries({ queryKey: ['goals'] });
+    queryClient.invalidateQueries({ queryKey: ['diagnostic-current-dashboard'] });
+    queryClient.invalidateQueries({ queryKey: ['diagnostic-current-insights'] });
+  };
 
   const createMutation = useMutation({
     mutationFn: createGoal,
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['goals'] });
-      queryClient.invalidateQueries({ queryKey: ['diagnostic-current-dashboard'] });
-      queryClient.invalidateQueries({ queryKey: ['diagnostic-current-insights'] });
+      invalidateGoalQueries();
       setOpen(false);
+      setEditingId(null);
       setForm(emptyForm);
       toast({ title: 'Meta criada', description: 'Ela passa a alimentar diagnóstico e insights.' });
     },
@@ -78,25 +118,52 @@ const MetasPage = () => {
     },
   });
 
+  const updateMutation = useMutation({
+    mutationFn: ({ id, payload }: { id: string; payload: ReturnType<typeof parseFormPayload> }) =>
+      updateGoal(id, payload),
+    onSuccess: () => {
+      invalidateGoalQueries();
+      setOpen(false);
+      setEditingId(null);
+      setForm(emptyForm);
+      toast({ title: 'Meta atualizada' });
+    },
+    onError: (err: Error) => {
+      toast({
+        title: 'Não foi possível atualizar a meta',
+        description: err.message,
+        variant: 'destructive',
+      });
+    },
+  });
+
   const list = goals ?? [];
+  const saving = createMutation.isPending || updateMutation.isPending;
+
+  const openCreate = () => {
+    setEditingId(null);
+    setForm(emptyForm);
+    setOpen(true);
+  };
+
+  const openEdit = (goal: Goal) => {
+    setEditingId(goal.id);
+    setForm(goalToForm(goal));
+    setOpen(true);
+  };
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    const targetAmount = Number(String(form.targetAmount).replace(',', '.'));
-    if (!form.name.trim() || !Number.isFinite(targetAmount) || targetAmount <= 0) {
+    const payload = parseFormPayload(form);
+    if (!payload.name || !Number.isFinite(payload.targetAmount) || payload.targetAmount <= 0) {
       toast({ title: 'Preencha nome e valor alvo', variant: 'destructive' });
       return;
     }
-    createMutation.mutate({
-      name: form.name.trim(),
-      targetAmount,
-      currentAmount: Number(String(form.currentAmount).replace(',', '.')) || 0,
-      monthlyContribution: form.monthlyContribution
-        ? Number(String(form.monthlyContribution).replace(',', '.'))
-        : null,
-      targetDate: form.targetDate || null,
-      description: null,
-    });
+    if (editingId) {
+      updateMutation.mutate({ id: editingId, payload });
+      return;
+    }
+    createMutation.mutate(payload);
   };
 
   return (
@@ -105,12 +172,12 @@ const MetasPage = () => {
         <div>
           <h1 className="font-display text-2xl lg:text-3xl font-bold">Metas Financeiras</h1>
           <p className="text-muted-foreground text-sm mt-1">
-            Objetivos com valor, prazo e aporte — usados no diagnóstico e nos insights.
+            Objetivos com valor, prazo e aporte definidos por você, usados no diagnóstico e nos insights.
           </p>
         </div>
         <button
           type="button"
-          onClick={() => setOpen(true)}
+          onClick={openCreate}
           className="inline-flex items-center justify-center gap-2 rounded-xl bg-primary text-primary-foreground px-4 py-2.5 text-sm font-semibold"
         >
           <Plus size={16} />
@@ -133,13 +200,13 @@ const MetasPage = () => {
           <div className="space-y-2 max-w-md mx-auto">
             <h2 className="font-display text-lg font-semibold">Nenhuma meta ainda</h2>
             <p className="text-sm text-muted-foreground">
-              Se você já fez o diagnóstico inicial, as prioridades viram metas automaticamente na
-              próxima visita. Ou crie a primeira agora — reserva, viagem, dívida, imóvel.
+              No diagnóstico informe valor e prazo dos objetivos, ou crie a primeira meta aqui com os números
+              que fazem sentido para você.
             </p>
           </div>
           <button
             type="button"
-            onClick={() => setOpen(true)}
+            onClick={openCreate}
             className="inline-flex items-center gap-2 rounded-xl bg-primary text-primary-foreground px-4 py-2.5 text-sm font-semibold"
           >
             <Plus size={16} />
@@ -152,51 +219,66 @@ const MetasPage = () => {
         {list.map((g, i) => {
           const progress = g.targetAmount > 0 ? Math.round((g.currentAmount / g.targetAmount) * 100) : 0;
           const remaining = Math.max(0, g.targetAmount - g.currentAmount);
-          const monthlyNeeded = g.monthlyContribution ?? 0;
+          const monthlyNeeded = g.monthlyContribution;
           const status = computeStatus(g, progress);
           const barClass =
             status === 'on-track' || status === 'completed'
               ? 'bg-success'
               : status === 'warning'
                 ? 'bg-warning'
-                : 'bg-destructive';
+                : status === 'incomplete'
+                  ? 'bg-muted-foreground/40'
+                  : 'bg-destructive';
 
-          const projectionData = Array.from({ length: 7 }, (_, idx) => ({
-            month: `M${idx}`,
-            otimista: Math.min(g.currentAmount + monthlyNeeded * 1.2 * idx, g.targetAmount),
-            realista: Math.min(g.currentAmount + monthlyNeeded * idx, g.targetAmount),
-            conservador: Math.min(g.currentAmount + monthlyNeeded * 0.7 * idx, g.targetAmount),
-          }));
+          const projectionData =
+            monthlyNeeded != null && monthlyNeeded > 0
+              ? Array.from({ length: 7 }, (_, idx) => ({
+                  month: `M${idx}`,
+                  otimista: Math.min(g.currentAmount + monthlyNeeded * 1.2 * idx, g.targetAmount),
+                  realista: Math.min(g.currentAmount + monthlyNeeded * idx, g.targetAmount),
+                  conservador: Math.min(g.currentAmount + monthlyNeeded * 0.7 * idx, g.targetAmount),
+                }))
+              : [];
 
           return (
             <motion.div key={g.id} {...anim(1 + i)} className="bg-card border border-border rounded-xl p-6">
-              <div className="flex items-start justify-between mb-4">
-                <div className="flex items-center gap-3">
+              <div className="flex items-start justify-between mb-4 gap-3">
+                <div className="flex items-center gap-3 min-w-0">
                   <div
-                    className={`w-10 h-10 rounded-lg flex items-center justify-center ${
+                    className={`w-10 h-10 rounded-lg flex items-center justify-center shrink-0 ${
                       status === 'on-track' || status === 'completed'
                         ? 'bg-success/20'
                         : status === 'warning'
                           ? 'bg-warning/20'
-                          : 'bg-destructive/20'
+                          : status === 'incomplete'
+                            ? 'bg-muted'
+                            : 'bg-destructive/20'
                     }`}
                   >
-                    <Target size={18} className={getStatusColor(status)} />
+                    <Target size={18} className={getStatusColor(status === 'incomplete' ? 'warning' : status)} />
                   </div>
-                  <div>
-                    <h3 className="font-display font-semibold">{g.name}</h3>
+                  <div className="min-w-0">
+                    <h3 className="font-display font-semibold truncate">{g.name}</h3>
                     {g.description && (
                       <p className="text-xs text-muted-foreground mt-0.5">{g.description}</p>
                     )}
                   </div>
                 </div>
-                <div className="text-right">
+                <div className="text-right shrink-0 space-y-2">
                   <p className="text-xl font-display font-bold tabular-nums">{formatCurrency(g.targetAmount)}</p>
                   {g.targetDate && (
                     <p className="text-xs text-muted-foreground">
                       Prazo: {new Date(g.targetDate).toLocaleDateString('pt-BR')}
                     </p>
                   )}
+                  <button
+                    type="button"
+                    onClick={() => openEdit(g)}
+                    className="inline-flex items-center gap-1.5 rounded-lg border border-border px-2.5 py-1 text-[11px] font-semibold hover:bg-muted/50"
+                  >
+                    <Pencil size={12} />
+                    Editar
+                  </button>
                 </div>
               </div>
 
@@ -222,18 +304,24 @@ const MetasPage = () => {
                 </div>
                 <div>
                   <span className="text-muted-foreground text-xs">Aporte planejado</span>
-                  <p className="font-semibold tabular-nums">{formatCurrency(monthlyNeeded)}/mês</p>
+                  <p className="font-semibold tabular-nums">
+                    {monthlyNeeded != null && monthlyNeeded > 0
+                      ? `${formatCurrency(monthlyNeeded)}/mês`
+                      : 'Não definido'}
+                  </p>
                 </div>
                 <div>
                   <span className="text-muted-foreground text-xs">Viabilidade</span>
-                  <p className={`font-semibold ${getStatusColor(status)}`}>
+                  <p className={`font-semibold ${getStatusColor(status === 'incomplete' ? 'warning' : status)}`}>
                     {status === 'on-track'
                       ? 'Viável'
                       : status === 'warning'
                         ? 'Atenção'
                         : status === 'completed'
                           ? 'Concluída'
-                          : 'Em risco'}
+                          : status === 'incomplete'
+                            ? 'Informe aporte e prazo'
+                            : 'Em risco'}
                   </p>
                 </div>
                 <div>
@@ -251,13 +339,15 @@ const MetasPage = () => {
                           ? 'Requer ajuste'
                           : status === 'completed'
                             ? 'Concluída'
-                            : 'Atrasada'}
+                            : status === 'incomplete'
+                              ? 'Incompleto'
+                              : 'Atrasada'}
                     </span>
                   </div>
                 </div>
               </div>
 
-              {monthlyNeeded > 0 && (
+              {projectionData.length > 0 && (
                 <div className="h-[160px]">
                   <ResponsiveContainer width="100%" height="100%">
                     <LineChart data={projectionData}>
@@ -293,10 +383,19 @@ const MetasPage = () => {
         })}
       </div>
 
-      <Dialog open={open} onOpenChange={setOpen}>
+      <Dialog
+        open={open}
+        onOpenChange={(next) => {
+          setOpen(next);
+          if (!next) {
+            setEditingId(null);
+            setForm(emptyForm);
+          }
+        }}
+      >
         <DialogContent>
           <DialogHeader>
-            <DialogTitle>Nova meta</DialogTitle>
+            <DialogTitle>{editingId ? 'Editar meta' : 'Nova meta'}</DialogTitle>
           </DialogHeader>
           <form onSubmit={handleSubmit} className="space-y-3">
             <label className="block space-y-1">
@@ -360,10 +459,10 @@ const MetasPage = () => {
               </button>
               <button
                 type="submit"
-                disabled={createMutation.isPending}
+                disabled={saving}
                 className="rounded-lg bg-primary text-primary-foreground px-4 py-2 text-sm font-semibold inline-flex items-center gap-2"
               >
-                {createMutation.isPending && <Loader2 size={14} className="animate-spin" />}
+                {saving && <Loader2 size={14} className="animate-spin" />}
                 Salvar
               </button>
             </DialogFooter>

@@ -94,7 +94,7 @@ function StepCard({ step, index }: { step: JourneyStep; index: number }) {
 
           {step.meta?.pendingJob && (
             <p className="text-xs text-amber-600 dark:text-amber-400">
-              Há um extrato sendo processado — aguarde ou abra para revisar.
+              Há um extrato sendo processado. Aguarde ou abra para revisar.
             </p>
           )}
 
@@ -163,7 +163,7 @@ export default function JornadaPage() {
                 Dados dos extratos importados
               </span>
             ) : data.hasOnboarding ? (
-              <span>Baseado no diagnóstico — importe extratos para dados reais</span>
+              <span>Baseado no diagnóstico. Importe extratos para dados reais</span>
             ) : (
               <span>Comece pelo diagnóstico inicial</span>
             )}

@@ -69,7 +69,7 @@ export default function ChatPage() {
     }
   }, []);
 
-  // Só carrega histórico quando o usuário (ou permissão de chat) muda de verdade —
+  // Só carrega histórico quando o usuário (ou permissão de chat) muda de verdade.
   // não a cada poll de /me (novo objeto user a cada 60s).
   useEffect(() => {
     if (!canChat || !userId) {
@@ -331,7 +331,7 @@ export default function ChatPage() {
           </button>
         </div>
         <p className="text-[10px] text-muted-foreground/80 mt-2 text-center">
-          A Clareza analisa seus lançamentos, metas e dívidas a cada mensagem. Pode cometer erros — use como apoio.
+          A Clareza analisa seus lançamentos, metas e dívidas a cada mensagem. Pode cometer erros. Use como apoio.
         </p>
       </div>
     </div>

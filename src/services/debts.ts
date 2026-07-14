@@ -8,13 +8,9 @@ export interface DebtSummary {
   monthlyPayment: number;
   interestRate: number | null;
   monthlyImpact: number;
-  potentialSaving: number;
   attackOrder: number;
-  estimatedFromOnboarding?: boolean;
-  sourceNote?: string;
 }
 
 export async function fetchDebts(): Promise<DebtSummary[]> {
   return apiFetch<DebtSummary[]>('/api/debts');
 }
-

@@ -103,7 +103,7 @@ const AdminPage = () => {
   const kpis = useMemo(() => {
     if (!metrics) return [];
     return [
-      { label: 'Tenants totais', value: String(metrics.tenantsTotal), change: '—', trend: 'up' as const },
+      { label: 'Tenants totais', value: String(metrics.tenantsTotal), change: '-', trend: 'up' as const },
       { label: 'MRR (estimado)', value: formatCurrency(metrics.mrr), change: 'Stripe / planos', trend: 'up' as const },
       { label: 'ARR (estimado)', value: formatCurrency(metrics.arr), change: 'MRR × 12', trend: 'up' as const },
       { label: 'Churn (mês)', value: `${metrics.churnRate.toFixed(1)}%`, change: 'Cancelados vs base', trend: metrics.churnRate > 5 ? ('down' as const) : ('up' as const) },
@@ -149,7 +149,7 @@ const AdminPage = () => {
         <div>
           <h1 className="font-display text-2xl lg:text-3xl font-bold">Admin Master</h1>
           <p className="text-muted-foreground text-sm">
-            Painel executivo — {user?.name ?? 'Master'}
+            Painel executivo · {user?.name ?? 'Master'}
           </p>
         </div>
       </motion.div>
@@ -296,7 +296,7 @@ const AdminPage = () => {
                     <div>
                       <p className="font-medium text-sm">{t.name}</p>
                       <p className="text-xs text-muted-foreground">
-                        {t.planCode} — {t.subscriptionStatus}
+                        {t.planCode} · {t.subscriptionStatus}
                       </p>
                     </div>
                     <span className={`text-lg font-display font-bold tabular-nums ${getScoreColor(t.healthScore)}`}>
@@ -367,7 +367,7 @@ const AdminPage = () => {
                       <td className="py-3 px-4 text-muted-foreground text-xs whitespace-nowrap">
                         {t.lastActiveAt
                           ? new Intl.DateTimeFormat('pt-BR', { dateStyle: 'short', timeStyle: 'short' }).format(new Date(t.lastActiveAt))
-                          : '—'}
+                          : '-'}
                       </td>
                     </tr>
                   ))}
@@ -412,13 +412,13 @@ const AdminPage = () => {
       {tab === 'skill' && (
         <div className="space-y-6">
           <p className="text-sm text-muted-foreground">
-            Qualidade da Skill FIN_HEALTH_MENTOR_BR ({skillQuality?.skillVersion ?? '…'}) — últimos{' '}
+            Qualidade da Skill FIN_HEALTH_MENTOR_BR ({skillQuality?.skillVersion ?? '…'}), últimos{' '}
             {skillQuality?.windowDays ?? 30} dias.
           </p>
           {(skillQuality?.alerts?.passRateLow || (skillQuality?.alerts?.overdueHumanReviews ?? 0) > 0) && (
             <div className="rounded-xl border border-amber-500/40 bg-amber-500/10 px-4 py-3 text-sm">
               {skillQuality?.alerts?.passRateLow ? (
-                <p>Pass rate abaixo do limiar — revisar prompts/crítico.</p>
+                <p>Pass rate abaixo do limiar. Revisar prompts/crítico.</p>
               ) : null}
               {(skillQuality?.alerts?.overdueHumanReviews ?? 0) > 0 ? (
                 <p>{skillQuality?.alerts?.overdueHumanReviews} ticket(s) com SLA vencido.</p>
@@ -493,7 +493,7 @@ const AdminPage = () => {
                         </p>
                         <p className="text-xs text-muted-foreground">{row.ticket.reason}</p>
                         <p className="text-[10px] text-muted-foreground mt-1">
-                          {row.ticket.diagnosisState ?? '—'} ·{' '}
+                          {row.ticket.diagnosisState ?? '-'} ·{' '}
                           {new Date(row.ticket.createdAt).toLocaleString('pt-BR')}
                           {row.ticket.slaDueAt
                             ? ` · SLA ${new Date(row.ticket.slaDueAt).toLocaleString('pt-BR')}`

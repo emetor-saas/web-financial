@@ -92,10 +92,15 @@ const DashboardPage = () => {
   const dataSource = stats?.dataSource ?? 'none';
   const usesTransactions = dataSource === 'transactions';
   const periodHasTransactions = stats?.periodHasTransactions === true;
-  const estimatedFromDiagnostic = stats?.estimatedFromDiagnostic === true;
+  const needsObservedData = stats?.needsObservedData === true || (!usesTransactions && !periodHasTransactions);
 
-  const auraScore = diagnostic?.auraScore?.score ?? 0;
-  const riskBand = diagnostic?.auraScore?.band?.replace('_', ' ') ?? 'Aguardando dados';
+  const auraScoreRaw = diagnostic?.auraScore?.score;
+  const auraScore = typeof auraScoreRaw === 'number' ? auraScoreRaw : null;
+  const scoreBasis = diagnostic?.auraScore?.basis as string | undefined;
+  const riskBand =
+    diagnostic?.auraScore?.band === 'INDISPONIVEL'
+      ? 'Indisponível'
+      : diagnostic?.auraScore?.band?.replace(/_/g, ' ') ?? 'Aguardando dados';
   const narrative = buildClientNarrative(diagnostic ?? {}, 'dashboard');
   const priorities = diagnostic?.mainPriorities ?? [];
   const recommendation = diagnostic?.summaryExecutive?.[0] ?? null;
@@ -105,6 +110,8 @@ const DashboardPage = () => {
     { label: 'Receitas', total: totalIncome },
     { label: 'Gastos', total: totalExpenses },
   ];
+
+  const kpiMoney = (n: number) => (needsObservedData ? '-' : formatCurrency(n));
 
   const fallbackPriorities = [
     'Construir ou reforçar a reserva até atingir pelo menos 3 meses de despesas.',
@@ -202,9 +209,10 @@ const DashboardPage = () => {
 
       <div className="flex-1 p-6 sm:p-8 space-y-6">
 
-        {estimatedFromDiagnostic && (
+        {needsObservedData && (
           <motion.p {...anim(0)} className="text-xs text-muted-foreground border-b border-border pb-4">
-            Valores do diagnóstico inicial (antes de importar extratos). Importe OFX/CSV para ver dados reais.
+            KPIs de renda, gastos e sobra só aparecem com lançamentos importados ou cadastrados. O diagnóstico
+            orienta análise; não inventa valores em reais no painel.
           </motion.p>
         )}
 
@@ -222,15 +230,27 @@ const DashboardPage = () => {
         )}
 
         <motion.div {...anim(0)} className="grid grid-cols-2 lg:grid-cols-4 items-start gap-x-8 gap-y-4">
-          <KpiItem label="Renda Mensal" value={formatCurrency(totalIncome)} />
-          <KpiItem label="Gastos Totais" value={formatCurrency(totalExpenses)} />
-          <KpiItem label="Sobra Real" value={formatCurrency(balance)} />
+          <KpiItem label="Renda Mensal" value={kpiMoney(totalIncome)} />
+          <KpiItem label="Gastos Totais" value={kpiMoney(totalExpenses)} />
+          <KpiItem label="Sobra do período" value={kpiMoney(balance)} />
           <div className="flex flex-col items-start lg:items-end gap-0.5">
             <span className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground">Score Clareza</span>
-            <span className={`text-5xl font-black font-mono-nums leading-none ${getScoreColor(auraScore)}`}>
-              {Math.round(auraScore)}
+            <span
+              className={`text-5xl font-black font-mono-nums leading-none ${
+                auraScore == null ? 'text-muted-foreground' : getScoreColor(auraScore)
+              }`}
+            >
+              {auraScore == null ? '-' : Math.round(auraScore)}
             </span>
-            <span className="text-xs text-muted-foreground">{getScoreLabel(auraScore)}</span>
+            <span className="text-xs text-muted-foreground">
+              {auraScore == null
+                ? 'Indisponível sem diagnóstico ou dados'
+                : scoreBasis === 'diagnostic'
+                  ? 'Inicial (diagnóstico)'
+                  : scoreBasis === 'mixed'
+                    ? 'Parcialmente observado'
+                    : getScoreLabel(auraScore)}
+            </span>
           </div>
         </motion.div>
 
@@ -417,9 +437,9 @@ const DashboardPage = () => {
 
         </div>
 
-        {!estimatedFromDiagnostic && (
+        {needsObservedData && (
           <p className="text-xs text-muted-foreground border-t border-border pt-4">
-            Dados estimados do diagnóstico inicial: renda, gastos e sobra estão vindo do onboarding até você importar extratos ou registrar movimentações reais.
+            Importe extratos ou lance movimentações para popular renda, gastos e sobra com dados observados.
           </p>
         )}
 

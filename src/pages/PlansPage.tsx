@@ -113,7 +113,7 @@ const TenantPlansSection = () => {
 
   const openBillingPortalInNewTab = () => {
     void (async () => {
-      // Abrir cedo (gesto do usuário) sem noopener — senão a aba fica em about:blank
+      // Abrir cedo (gesto do usuário) sem noopener; senão a aba fica em about:blank
       // e o browser devolve null / impede navegar para o Stripe.
       const tab = window.open('about:blank', '_blank');
       try {
@@ -178,7 +178,7 @@ const TenantPlansSection = () => {
         </p>
         <p className="text-xs text-amber-600/90 dark:text-amber-400/90 rounded-xl border border-amber-500/25 bg-amber-500/5 px-3 py-2">
           Novos cadastros têm <strong>1 hora</strong> de teste gratuito do app (trial da conta). Planos pagos
-          podem incluir dias de trial adicionais no Stripe — veja a descrição de cada plano.
+          podem incluir dias de trial adicionais no Stripe. Veja a descrição de cada plano.
         </p>
         {user?.household?.billingPaymentMethod && (
           <p className="text-xs text-muted-foreground rounded-xl border border-border bg-muted/20 px-3 py-2 flex items-center gap-2">
@@ -356,7 +356,7 @@ const TenantPlansSection = () => {
                 </div>
                 {isFree ? (
                   <p className="mt-4 text-[11px] text-muted-foreground rounded-xl border border-border bg-muted/30 px-3 py-2">
-                    O acesso inicial é o trial de 1 hora. Não há plano gratuito permanente para tenants — escolha
+                    O acesso inicial é o trial de 1 hora. Não há plano gratuito permanente para tenants. Escolha
                     um plano pago para continuar após o teste.
                   </p>
                 ) : isCurrentPlan ? (
@@ -582,7 +582,7 @@ const MasterPlansSection = () => {
                       <p className="text-[11px] text-muted-foreground">
                         {plan.code} • {formatPrice(plan.amountInCents, plan.currency)} /{' '}
                         {plan.interval === 'month' ? 'mês' : plan.interval}
-                        {plan.description ? ` — ${plan.description}` : ''}
+                        {plan.description ? `: ${plan.description}` : ''}
                       </p>
                     </div>
                     <div className="flex items-center gap-2 flex-shrink-0">

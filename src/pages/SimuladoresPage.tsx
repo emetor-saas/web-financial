@@ -53,7 +53,7 @@ export default function SimuladoresPage() {
           <Calculator size={28} /> Simuladores
         </h1>
         <p className="text-muted-foreground text-sm mt-1">
-          Cálculos determinísticos educativos — não são recomendação de crédito nem de investimento.
+          Cálculos determinísticos educativos. Não são recomendação de crédito nem de investimento.
         </p>
       </header>
 

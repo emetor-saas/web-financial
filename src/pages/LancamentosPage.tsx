@@ -133,7 +133,7 @@ export default function LancamentosPage() {
                     {new Date(row.date).toLocaleDateString('pt-BR')}
                   </td>
                   <td className="py-2.5 px-2 max-w-[240px] truncate">{row.description}</td>
-                  <td className="py-2.5 px-2 text-xs">{row.category?.name ?? '—'}</td>
+                  <td className="py-2.5 px-2 text-xs">{row.category?.name ?? '-'}</td>
                   <td
                     className={`py-2.5 px-2 text-right font-semibold tabular-nums ${
                       row.type === 'INCOME' ? 'text-emerald-600' : 'text-foreground'

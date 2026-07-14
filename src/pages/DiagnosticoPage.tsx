@@ -61,33 +61,42 @@ const DiagnosticoPage = () => {
     queryFn: fetchScoreHistory,
   });
 
-  const auraScore = data?.auraScore?.score ?? 0;
+  const auraScoreRaw = data?.auraScore?.score;
+  const auraScore = typeof auraScoreRaw === 'number' ? auraScoreRaw : null;
   const isEstimated = data?.auraScore?.isEstimated ?? false;
+  const scoreBasis = data?.auraScore?.basis as string | undefined;
   const usesTransactions = data?.dataSources?.hasImportedTransactions === true;
-  const usedOnboarding = !usesTransactions && data?.missingData?.isFullyEstimated === true;
 
   const pillars = data?.auraScore?.pillars ?? {};
-  const displayScores = PILLAR_KEYS.map((p) => ({
-    ...p,
-    raw: Number(pillars[p.key] ?? 0),
-    display: pillarToDisplay(Number(pillars[p.key] ?? 0)),
-  }));
+  const displayScores = PILLAR_KEYS.map((p) => {
+    const rawVal = pillars[p.key];
+    const raw = typeof rawVal === 'number' ? rawVal : null;
+    return {
+      ...p,
+      raw: raw ?? 0,
+      display: raw == null ? 0 : pillarToDisplay(raw),
+      available: raw != null,
+    };
+  });
 
+  const availableScores = displayScores.filter((x) => x.available);
   const avgDisplay =
-    displayScores.length > 0
-      ? displayScores.reduce((s, x) => s + x.display, 0) / displayScores.length
+    availableScores.length > 0
+      ? availableScores.reduce((s, x) => s + x.display, 0) / availableScores.length
       : 0;
 
   const radarData = displayScores.map((p) => ({
     subject: p.short,
     fullLabel: p.label,
-    value: p.display,
-    trend: trendVsAverage(p.display, avgDisplay),
+    value: p.available ? p.display : 0,
+    trend: p.available ? trendVsAverage(p.display, avgDisplay) : ('flat' as const),
   }));
 
   const historyData = scoreHistory?.hasData
     ? scoreHistory.points.map((p) => ({ month: p.month, score: p.score }))
-    : [{ month: 'Atual', score: auraScore }];
+    : auraScore != null
+      ? [{ month: 'Atual', score: auraScore }]
+      : [];
 
   const dimensions = [
     {
@@ -130,33 +139,46 @@ const DiagnosticoPage = () => {
       {/* Score resumo compacto */}
       <motion.div {...anim(1)} className="card-solid rounded-2xl p-6 text-center">
         <span className="text-xs font-bold text-muted-foreground uppercase tracking-widest">Score Clareza geral</span>
-        <p className={`text-5xl sm:text-6xl font-display font-black tabular-nums mt-1 ${getScoreColor(auraScore)}`}>
-          {Math.round(auraScore)}
+        <p
+          className={`text-5xl sm:text-6xl font-display font-black tabular-nums mt-1 ${
+            auraScore == null ? 'text-muted-foreground' : getScoreColor(auraScore)
+          }`}
+        >
+          {auraScore == null ? '-' : Math.round(auraScore)}
         </p>
         <p className="text-muted-foreground text-sm mt-1">
-          <span className={`font-semibold ${getScoreColor(auraScore)}`}>{getScoreLabel(auraScore)}</span>
+          <span
+            className={`font-semibold ${auraScore == null ? 'text-muted-foreground' : getScoreColor(auraScore)}`}
+          >
+            {auraScore == null ? 'Indisponível' : getScoreLabel(auraScore)}
+          </span>
         </p>
         <p className="text-[11px] text-muted-foreground mt-3 max-w-lg mx-auto leading-relaxed">
-          O AURA é uma ferramenta educativa de saúde financeira — não é score de crédito, diagnóstico clínico nem
+          O AURA é uma ferramenta educativa de saúde financeira. Não é score de crédito, diagnóstico clínico nem
           medida de valor pessoal. Mostra componentes do período analisado e tem limitações quando os dados são
-          parciais ou declarados.
+          parciais.
         </p>
-        {usesTransactions && (
+        {usesTransactions && scoreBasis === 'observed' && (
           <p className="text-xs text-emerald-700 dark:text-emerald-400 border border-emerald-500/30 rounded-xl px-4 py-3 mb-4">
-            Renda, gastos e score calculados com base nos extratos importados. As respostas do diagnóstico inicial
-            servem só como contexto, não entram na soma.
+            Score calculado com lançamentos e cadastros reais. Faixas do diagnóstico não entram mais como base
+            principal.
           </p>
         )}
 
-        {usedOnboarding && (
+        {scoreBasis === 'diagnostic' && (
           <p className="text-[11px] text-amber-400 mt-2 max-w-lg mx-auto">
-            Este diagnóstico inicial está baseado principalmente nas respostas do onboarding. Conforme você importar extratos e
-            registrar movimentos reais, o score Clareza será refinado automaticamente.
+            Score inicial a partir do seu diagnóstico (faixas e respostas). Ao importar extratos e cadastrar
+            dívidas/contas, ele é atualizado automaticamente.
           </p>
         )}
-        {isEstimated && !usedOnboarding && (
+        {scoreBasis === 'mixed' && (
+          <p className="text-[11px] text-amber-400 mt-2 max-w-lg mx-auto">
+            Score misto: parte dos pilares já usa dados observados; o restante ainda vem do diagnóstico.
+          </p>
+        )}
+        {isEstimated && scoreBasis === 'observed' && (
           <p className="text-[11px] text-amber-400 mt-2">
-            Score estimado com dados parciais. Quanto mais dados reais você cadastrar, mais preciso ficará o diagnóstico.
+            Ainda faltam evidências em alguns pilares; complete cadastros para fechar o score.
           </p>
         )}
       </motion.div>
@@ -204,7 +226,7 @@ const DiagnosticoPage = () => {
         </motion.div>
       )}
 
-      {/* MAPA DE DESEMPENHO — estilo referência */}
+      {/* MAPA DE DESEMPENHO (estilo referência) */}
       <motion.div
         {...anim(3)}
         className="bg-card rounded-2xl border border-border/80 shadow-lg shadow-black/5 p-6 sm:p-8"
@@ -246,7 +268,7 @@ const DiagnosticoPage = () => {
                         ? 'hsl(0 70% 50%)'
                         : 'hsl(var(--muted-foreground))';
                   const trendText =
-                    t.dir === 'flat' ? '—' : t.delta > 0 ? `+${t.delta}` : `${t.delta}`;
+                    t.dir === 'flat' ? '-' : t.delta > 0 ? `+${t.delta}` : `${t.delta}`;
                   return (
                     <g transform={`translate(${x},${y})`}>
                       <text
@@ -326,7 +348,7 @@ const DiagnosticoPage = () => {
         ))}
       </motion.div>
 
-      {/* Evolução — só quando houver histórico real no futuro pode substituir */}
+      {/* Evolução: só quando houver histórico real no futuro pode substituir */}
       <motion.div {...anim(4)} className="card-solid rounded-2xl p-4 sm:p-6 hover:border-border transition-all duration-200">
         <h3 className="font-display font-semibold mb-2">Evolução do score geral</h3>
         <p className="text-xs text-muted-foreground mb-4">

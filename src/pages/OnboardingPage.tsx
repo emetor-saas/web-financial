@@ -39,6 +39,13 @@ export default function OnboardingPage() {
     setAnswers((prev) => ({ ...prev, [id]: value }));
   };
 
+  const updateGoalDetails = (
+    questionId: string,
+    next: Record<string, { targetAmount: string; months: string }>,
+  ) => {
+    setAnswers((prev) => ({ ...prev, [`${questionId}Metas`]: next }));
+  };
+
   const handleFinish = async () => {
     setSubmitting(true);
     try {
@@ -131,8 +138,18 @@ export default function OnboardingPage() {
                 </div>
                 <OnboardingQuestionField
                   question={question}
-                  value={answers[question.id]}
+                  value={
+                    typeof answers[question.id] === 'string' || Array.isArray(answers[question.id])
+                      ? (answers[question.id] as string | string[])
+                      : undefined
+                  }
                   onChange={(v) => updateAnswer(question.id, v)}
+                  goalDetails={
+                    (answers[`${question.id}Metas`] as
+                      | Record<string, { targetAmount: string; months: string }>
+                      | undefined) ?? {}
+                  }
+                  onGoalDetailsChange={(next) => updateGoalDetails(question.id, next)}
                 />
               </motion.div>
             ))}

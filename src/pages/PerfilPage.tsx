@@ -92,6 +92,13 @@ const PerfilPage = () => {
   const score = diagnostic?.auraScore?.score != null ? Math.round(diagnostic.auraScore.score) : null;
   const avgIncome = diagnostic?.currentSituation?.avgIncome ?? 0;
   const totalDebt = diagnostic?.currentSituation?.totalDebt ?? 0;
+  const debtSource = diagnostic?.dataSources?.debtSource;
+  const debtLabel =
+    diagnostic?.currentSituation?.fromOnboarding &&
+    typeof diagnostic.currentSituation.fromOnboarding === 'object' &&
+    'debtBandLabel' in diagnostic.currentSituation.fromOnboarding
+      ? (diagnostic.currentSituation.fromOnboarding as { debtBandLabel?: string | null }).debtBandLabel
+      : null;
   const activeGoalsCount = goals.filter((g) => !g.isAchieved).length;
 
   const saveMutation = useMutation({
@@ -234,7 +241,7 @@ const PerfilPage = () => {
             <span>
               Score Clareza:{' '}
               <strong className="text-primary tabular-nums">
-                {score != null ? score : '—'}
+                {score != null ? score : '-'}
               </strong>
             </span>
             <span>
@@ -332,7 +339,13 @@ const PerfilPage = () => {
           <div className="flex items-center gap-2">
             <CreditCard size={14} className="text-muted-foreground flex-shrink-0" />
             <span className="text-muted-foreground">Dívida total:</span>
-            <strong className="tabular-nums">{formatCurrency(totalDebt)}</strong>
+            <strong className="tabular-nums">
+              {debtSource === 'debts_table'
+                ? formatCurrency(totalDebt)
+                : debtLabel
+                  ? debtLabel
+                  : '-'}
+            </strong>
           </div>
           <div className="flex items-center gap-2">
             <Target size={14} className="text-muted-foreground flex-shrink-0" />
