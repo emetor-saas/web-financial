@@ -25,6 +25,10 @@ export interface AuthUser {
     isActive: boolean;
     /** Quantidade de usuários do tenant no household (exclui MASTER). Para exibir “Espaço Casal”. */
     tenantMemberCount?: number;
+    /** Fim do período / data em que o acesso pago encerra (inclui cancelamento agendado). */
+    nextBillingDate?: string | null;
+    /** Pedido de cancelamento na Stripe (pode existir com status ainda ACTIVE). */
+    canceledAt?: string | null;
     /** Cartão/método da assinatura Stripe (bandeira + últimos 4), quando disponível */
     billingPaymentMethod?: {
       brand: string | null;

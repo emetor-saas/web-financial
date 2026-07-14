@@ -39,3 +39,20 @@ export async function createBillingPortalSession() {
   });
 }
 
+/** Reconcilia assinatura Stripe após checkout (fallback se o webhook atrasar). */
+export async function syncBillingFromStripe(sessionId?: string) {
+  return apiFetch<{
+    synced: boolean;
+    reason?: string;
+    household?: {
+      stripeSubscriptionId?: string | null;
+      subscriptionStatus?: string | null;
+      planCode?: string | null;
+      isActive?: boolean;
+    } | null;
+  }>('/api/billing/sync', {
+    method: 'POST',
+    body: JSON.stringify(sessionId ? { sessionId } : {}),
+  });
+}
+

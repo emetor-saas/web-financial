@@ -2,7 +2,7 @@ import { useState, useMemo, useEffect } from 'react';
 import { useSearchParams } from 'react-router-dom';
 import { useQuery, useMutation } from '@tanstack/react-query';
 import { useAuth } from '@/context/AuthContext';
-import { listPublicPlans, createCheckout, createBillingPortalSession } from '@/services/plans';
+import { listPublicPlans, createCheckout, createBillingPortalSession, syncBillingFromStripe } from '@/services/plans';
 import {
   listMasterPlans,
   createMasterPlan,
@@ -50,16 +50,36 @@ const TenantPlansSection = () => {
   useEffect(() => {
     const checkout = searchParams.get('checkout');
     if (!checkout) return;
+    const sessionId = searchParams.get('session_id') || undefined;
+    const next = new URLSearchParams(searchParams);
+    next.delete('checkout');
+    next.delete('session_id');
+    setSearchParams(next, { replace: true });
+
     if (checkout === 'success') {
-      void refreshUser().then(() => {
-        toast.success('Assinatura confirmada. Seu acesso foi atualizado.');
-      });
+      void (async () => {
+        try {
+          const sync = await syncBillingFromStripe(sessionId);
+          await refreshUser();
+          if (sync.synced) {
+            toast.success('Assinatura confirmada. Seu acesso foi liberado.');
+          } else {
+            toast.message(
+              'Pagamento recebido. Se o acesso ainda não liberar em instantes, use “Atualizar assinatura” abaixo.',
+            );
+          }
+        } catch (err) {
+          await refreshUser();
+          toast.message(
+            err instanceof Error
+              ? err.message
+              : 'Pagamento recebido. Atualizando status da assinatura…',
+          );
+        }
+      })();
     } else if (checkout === 'cancel') {
       toast.message('Checkout cancelado. Você pode tentar de novo quando quiser.');
     }
-    const next = new URLSearchParams(searchParams);
-    next.delete('checkout');
-    setSearchParams(next, { replace: true });
   }, [searchParams, setSearchParams, refreshUser]);
 
   const checkoutMutation = useMutation({
@@ -73,6 +93,21 @@ const TenantPlansSection = () => {
     mutationFn: () => createBillingPortalSession(),
     onError: (err) => {
       toast.error(err instanceof Error ? err.message : 'Erro ao abrir o portal de assinatura.');
+    },
+  });
+
+  const syncMutation = useMutation({
+    mutationFn: () => syncBillingFromStripe(),
+    onSuccess: async (sync) => {
+      await refreshUser();
+      if (sync.synced) {
+        toast.success('Assinatura atualizada. Acesso liberado.');
+      } else {
+        toast.message('Ainda não encontramos assinatura ativa na Stripe para esta conta.');
+      }
+    },
+    onError: (err) => {
+      toast.error(err instanceof Error ? err.message : 'Erro ao sincronizar assinatura.');
     },
   });
 
@@ -163,7 +198,51 @@ const TenantPlansSection = () => {
           </p>
         )}
 
-        {user?.billing?.hasPaidSubscription && (
+        {user?.household?.subscriptionStatus === 'CANCELED' && !user?.billing?.hasPaidSubscription && (
+          <div className="rounded-2xl border border-border bg-muted/30 px-4 py-3 space-y-1">
+            <h2 className="font-display font-semibold text-sm tracking-tight">Assinatura cancelada</h2>
+            <p className="text-xs text-muted-foreground leading-relaxed">
+              Não há cobranças futuras. Para voltar a usar o app com plano pago, contrate um plano abaixo.
+            </p>
+          </div>
+        )}
+
+        {user?.billing?.hasPaidSubscription && user?.household?.canceledAt && (
+          <div className="rounded-2xl border border-amber-500/30 bg-amber-500/5 px-4 py-4 space-y-3">
+            <div className="space-y-1">
+              <h2 className="font-display font-semibold text-sm tracking-tight">Cancelamento agendado</h2>
+              <p className="text-xs text-muted-foreground leading-relaxed">
+                Sua assinatura foi cancelada na Stripe. O acesso continua até{' '}
+                <strong className="text-foreground font-medium">
+                  {user.household.nextBillingDate
+                    ? new Date(user.household.nextBillingDate).toLocaleDateString('pt-BR')
+                    : 'o fim do período já pago'}
+                </strong>
+                . Não haverá nova cobrança.
+              </p>
+            </div>
+            <button
+              type="button"
+              disabled={portalMutation.isPending}
+              onClick={openBillingPortalInNewTab}
+              className="inline-flex items-center justify-center gap-2 rounded-xl border border-border bg-background px-4 py-2.5 text-xs font-semibold text-foreground shadow-sm hover:bg-muted/50 disabled:opacity-60 transition-colors"
+            >
+              {portalMutation.isPending ? (
+                <>
+                  <Loader2 size={14} className="animate-spin shrink-0" />
+                  Abrindo portal...
+                </>
+              ) : (
+                <>
+                  <ExternalLink size={14} className="shrink-0" />
+                  Gerenciar assinatura (reativar)
+                </>
+              )}
+            </button>
+          </div>
+        )}
+
+        {user?.billing?.hasPaidSubscription && !user?.household?.canceledAt && (
           <div className="rounded-2xl border border-border bg-card/80 px-4 py-4 space-y-3">
             <div className="space-y-1">
               <h2 className="font-display font-semibold text-sm tracking-tight">Sua assinatura</h2>
@@ -193,6 +272,27 @@ const TenantPlansSection = () => {
             </button>
           </div>
         )}
+
+        <div className="rounded-2xl border border-border bg-card/80 px-4 py-3 space-y-2">
+          <p className="text-xs text-muted-foreground leading-relaxed">
+            Status da Stripe e do app desatualizados (pagamento ou cancelamento)? Atualize a assinatura.
+          </p>
+          <button
+            type="button"
+            disabled={syncMutation.isPending}
+            onClick={() => syncMutation.mutate()}
+            className="inline-flex items-center justify-center gap-2 rounded-xl border border-border bg-background px-4 py-2 text-xs font-semibold text-foreground hover:bg-muted/50 disabled:opacity-60"
+          >
+            {syncMutation.isPending ? (
+              <>
+                <Loader2 size={14} className="animate-spin shrink-0" />
+                Atualizando...
+              </>
+            ) : (
+              'Atualizar assinatura'
+            )}
+          </button>
+        </div>
       </header>
 
       {isLoading || !plans ? (
@@ -201,15 +301,35 @@ const TenantPlansSection = () => {
         <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
           {plans.map((plan) => {
             const isFree = plan.amountInCents === 0;
+            const hasPaid = Boolean(user?.billing?.hasPaidSubscription);
+            const currentPlanCode = user?.household?.planCode?.trim().toLowerCase() || null;
+            const paidPlans = plans.filter((p) => p.amountInCents > 0);
+            const matchesCode =
+              Boolean(currentPlanCode) && plan.code.trim().toLowerCase() === currentPlanCode;
+            // Com um único plano pago e assinatura ativa, trata como plano atual mesmo se planCode estiver desatualizado.
+            const isCurrentPlan =
+              hasPaid &&
+              !isFree &&
+              (matchesCode || (paidPlans.length === 1 && plan.amountInCents > 0));
+            const cancelScheduled = Boolean(user?.household?.canceledAt);
+
             return (
               <div
                 key={plan.id}
-                className="card-solid rounded-2xl p-5 flex flex-col justify-between border border-border hover:border-primary/40 transition-all duration-200"
+                className={`card-solid rounded-2xl p-5 flex flex-col justify-between border transition-all duration-200 ${
+                  isCurrentPlan
+                    ? 'border-primary/50 ring-1 ring-primary/20'
+                    : 'border-border hover:border-primary/40'
+                }`}
               >
                 <div className="space-y-2">
-                  <div className="flex items-center justify-between">
+                  <div className="flex items-center justify-between gap-2">
                     <h2 className="font-display font-semibold tracking-tight">{plan.name}</h2>
-                    {isFree ? (
+                    {isCurrentPlan ? (
+                      <span className="text-[10px] font-semibold uppercase text-primary bg-primary/10 px-2 py-0.5 rounded-full shrink-0">
+                        Seu plano
+                      </span>
+                    ) : isFree ? (
                       <span className="text-[10px] font-semibold uppercase text-emerald-500 bg-emerald-500/10 px-2 py-0.5 rounded-full">
                         Gratuito
                       </span>
@@ -228,7 +348,7 @@ const TenantPlansSection = () => {
                       <span className="text-xs text-muted-foreground"> / mês</span>
                     )}
                   </p>
-                  {plan.trialDays != null && plan.trialDays > 0 && (
+                  {plan.trialDays != null && plan.trialDays > 0 && !isCurrentPlan && (
                     <p className="text-[11px] text-emerald-500 flex items-center gap-1">
                       <Crown size={12} /> {plan.trialDays} dias de teste grátis
                     </p>
@@ -238,6 +358,16 @@ const TenantPlansSection = () => {
                   <p className="mt-4 text-[11px] text-muted-foreground rounded-xl border border-border bg-muted/30 px-3 py-2">
                     O acesso inicial é o trial de 1 hora. Não há plano gratuito permanente para tenants — escolha
                     um plano pago para continuar após o teste.
+                  </p>
+                ) : isCurrentPlan ? (
+                  <p className="mt-4 text-[11px] text-muted-foreground rounded-xl border border-primary/25 bg-primary/5 px-3 py-2">
+                    {cancelScheduled
+                      ? 'Este é o seu plano atual (cancelamento já agendado). Use o portal acima para reativar ou gerenciar.'
+                      : 'Você já tem este plano ativo. Para trocar de cartão ou cancelar, use o portal da assinatura acima.'}
+                  </p>
+                ) : hasPaid ? (
+                  <p className="mt-4 text-[11px] text-muted-foreground rounded-xl border border-border bg-muted/30 px-3 py-2">
+                    Você já possui uma assinatura ativa. Para mudar de plano, use o portal da Stripe acima.
                   </p>
                 ) : (
                   <button

@@ -64,6 +64,8 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
                 prev.household?.subscriptionStatus === me.household?.subscriptionStatus &&
                 prev.household?.planCode === me.household?.planCode &&
                 prev.household?.isActive === me.household?.isActive &&
+                prev.household?.canceledAt === me.household?.canceledAt &&
+                prev.household?.nextBillingDate === me.household?.nextBillingDate &&
                 prev.billing?.canUseChat === me.billing?.canUseChat &&
                 prev.billing?.canUseApp === me.billing?.canUseApp &&
                 prev.billing?.hasPaidSubscription === me.billing?.hasPaidSubscription
