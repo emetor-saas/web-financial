@@ -1,4 +1,4 @@
-import { apiFetch } from '@/lib/apiClient';
+import { apiFetch, apiFormFetch } from '@/lib/apiClient';
 
 export interface ImportJob {
   id: string;
@@ -31,31 +31,16 @@ export async function uploadImportFile(file: File): Promise<void> {
   const formData = new FormData();
   formData.append('file', file);
 
-  const response = await fetch('/api/import-jobs/upload', {
-    method: 'POST',
-    body: formData,
-    credentials: 'include',
-  });
-
-  if (response.ok) return;
-
-  let message = `Erro ao enviar arquivo (${response.status})`;
-  let details: unknown;
-
   try {
-    const payload = (await response.json()) as {
-      error?: string;
-      details?: unknown;
-    };
-    if (payload?.error) message = payload.error;
-    details = payload?.details;
-  } catch {
-    const text = await response.text().catch(() => '');
-    if (text) {
-      message = text.slice(0, 200);
-    }
+    await apiFormFetch('/api/import-jobs/upload', formData);
+  } catch (err) {
+    const status = (err as Error & { status?: number; details?: unknown }).status ?? 0;
+    const details = (err as Error & { details?: unknown }).details;
+    const message =
+      err instanceof Error && err.message
+        ? err.message
+        : `Erro ao enviar arquivo (${status})`;
+    throw new ImportUploadError(message, status, details);
   }
-
-  throw new ImportUploadError(message, response.status, details);
 }
 

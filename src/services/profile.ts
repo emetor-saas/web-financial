@@ -1,4 +1,4 @@
-import { apiFetch } from '@/lib/apiClient';
+import { apiFetch, apiFormFetch, getApiUrl } from '@/lib/apiClient';
 
 export interface ProfileDto {
   id: string;
@@ -33,7 +33,11 @@ export interface PatchProfileBody {
 }
 
 export async function fetchProfile(): Promise<ProfileDto> {
-  return apiFetch<ProfileDto>('/api/profile');
+  const profile = await apiFetch<ProfileDto>('/api/profile');
+  return {
+    ...profile,
+    avatar: profile.avatar ? getApiUrl(profile.avatar) : null,
+  };
 }
 
 export async function patchProfile(body: PatchProfileBody): Promise<ProfileDto> {
@@ -47,21 +51,20 @@ export async function uploadProfileAvatar(file: File): Promise<{ avatarUrl: stri
   const formData = new FormData();
   formData.append('file', file);
 
-  const response = await fetch('/api/profile/avatar', {
-    method: 'POST',
-    credentials: 'include',
-    body: formData,
-  });
-
-  if (!response.ok) {
-    if (response.status === 400) {
+  try {
+    const result = await apiFormFetch<{ avatarUrl: string }>('/api/profile/avatar', formData);
+    return {
+      avatarUrl: getApiUrl(result.avatarUrl),
+    };
+  } catch (err) {
+    const status = (err as Error & { status?: number }).status;
+    if (status === 400) {
       throw new Error('Imagem inválida. Use JPG, PNG ou WEBP com até 5MB.');
     }
-    if (response.status === 401) {
+    if (status === 401) {
       throw new Error('Sua sessão expirou. Faça login novamente.');
     }
+    if (err instanceof Error && err.message) throw err;
     throw new Error('Não foi possível enviar sua imagem agora. Tente novamente.');
   }
-
-  return response.json() as Promise<{ avatarUrl: string }>;
 }

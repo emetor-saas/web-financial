@@ -10,6 +10,7 @@ function buildUserFacingErrorMessage(status: number): string {
   if (status === 401) return 'Sua sessão expirou. Faça login novamente.';
   if (status === 403) return 'Você não tem permissão para realizar esta ação.';
   if (status === 404) return 'Não encontramos o recurso solicitado.';
+  if (status === 405) return 'Esta operação não está disponível no servidor. Tente novamente após atualizar o app.';
   if (status === 409) return 'Conflito de dados. Atualize a página e tente novamente.';
   if (status === 422) return 'Os dados informados são inválidos.';
   if (status === 429) return 'Muitas tentativas em sequência. Aguarde e tente novamente.';
@@ -17,11 +18,31 @@ function buildUserFacingErrorMessage(status: number): string {
   return 'Não foi possível concluir a operação.';
 }
 
-function getApiUrl(path: string): string {
+/** Absolute API URL (uses VITE_API_URL in production when front and API are on different hosts). */
+export function getApiUrl(path: string): string {
   if (/^https?:\/\//i.test(path)) return path;
   const base = API_BASE_URL.replace(/\/$/, '');
   const p = path.startsWith('/') ? path : `/${path}`;
   return `${base}${p}`;
+}
+
+async function throwIfNotOk(res: Response): Promise<void> {
+  if (res.ok) return;
+  let message = buildUserFacingErrorMessage(res.status);
+  let details: unknown;
+  try {
+    const payload = (await res.json()) as { error?: string; details?: unknown };
+    if (payload?.error && typeof payload.error === 'string' && payload.error.length < 240) {
+      message = payload.error;
+    }
+    details = payload?.details;
+  } catch {
+    /* ignore non-JSON (e.g. nginx HTML 405) */
+  }
+  const err = new Error(message) as Error & { status?: number; details?: unknown };
+  err.status = res.status;
+  err.details = details;
+  throw err;
 }
 
 export async function apiFetch<T = unknown>(
@@ -39,23 +60,7 @@ export async function apiFetch<T = unknown>(
     },
   });
 
-  if (!res.ok) {
-    let message = buildUserFacingErrorMessage(res.status);
-    let details: unknown;
-    try {
-      const payload = (await res.json()) as { error?: string; details?: unknown };
-      if (payload?.error && typeof payload.error === 'string' && payload.error.length < 240) {
-        message = payload.error;
-      }
-      details = payload?.details;
-    } catch {
-      /* ignore */
-    }
-    const err = new Error(message) as Error & { status?: number; details?: unknown };
-    err.status = res.status;
-    err.details = details;
-    throw err;
-  }
+  await throwIfNotOk(res);
 
   // 204 No Content
   if (res.status === 204) {
@@ -65,3 +70,24 @@ export async function apiFetch<T = unknown>(
   return (await res.json()) as T;
 }
 
+/** Multipart/FormData POST — do not set Content-Type (browser sets boundary). */
+export async function apiFormFetch<T = unknown>(
+  path: string,
+  formData: FormData,
+  init?: Omit<RequestInit, 'body' | 'method'>,
+): Promise<T> {
+  const res = await fetch(getApiUrl(path), {
+    method: 'POST',
+    credentials: 'include',
+    ...init,
+    body: formData,
+  });
+
+  await throwIfNotOk(res);
+
+  if (res.status === 204) {
+    return undefined as T;
+  }
+
+  return (await res.json()) as T;
+}

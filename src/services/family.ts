@@ -1,4 +1,4 @@
-import { apiFetch } from '@/lib/apiClient';
+import { apiFetch, apiFormFetch, getApiUrl } from '@/lib/apiClient';
 
 export type CrestStyle = 'classic' | 'modern' | 'nature' | 'royal' | 'minimal' | 'upload';
 
@@ -60,8 +60,31 @@ export type GenerateCrestResult = {
   generationsRemaining: number;
 };
 
+function withAbsoluteMediaUrl(url: string | null | undefined): string | null {
+  if (!url) return null;
+  return getApiUrl(url);
+}
+
+function withAbsoluteCrestUrl<T extends { crest: FamilyCrest | null }>(data: T): T {
+  if (!data.crest?.url) return data;
+  return {
+    ...data,
+    crest: {
+      ...data.crest,
+      url: getApiUrl(data.crest.url),
+    },
+  };
+}
+
 export async function fetchFamilyOverview(): Promise<FamilyOverview> {
-  return apiFetch<FamilyOverview>('/api/family');
+  const data = await apiFetch<FamilyOverview>('/api/family');
+  return {
+    ...withAbsoluteCrestUrl(data),
+    members: data.members.map((m) => ({
+      ...m,
+      avatar: withAbsoluteMediaUrl(m.avatar),
+    })),
+  };
 }
 
 export async function generateFamilyCrest(input: {
@@ -69,10 +92,11 @@ export async function generateFamilyCrest(input: {
   symbols?: string[];
   motto?: string;
 }): Promise<GenerateCrestResult> {
-  return apiFetch<GenerateCrestResult>('/api/family/crest/generate', {
+  const result = await apiFetch<GenerateCrestResult>('/api/family/crest/generate', {
     method: 'POST',
     body: JSON.stringify(input),
   });
+  return withAbsoluteCrestUrl(result);
 }
 
 export async function uploadFamilyCrest(input: {
@@ -85,24 +109,8 @@ export async function uploadFamilyCrest(input: {
     formData.append('motto', input.motto.trim());
   }
 
-  const response = await fetch('/api/family/crest/upload', {
-    method: 'POST',
-    credentials: 'include',
-    body: formData,
-  });
-
-  if (!response.ok) {
-    let message = 'Não foi possível enviar o brasão.';
-    try {
-      const payload = (await response.json()) as { error?: string };
-      if (payload?.error) message = payload.error;
-    } catch {
-      /* ignore */
-    }
-    throw new Error(message);
-  }
-
-  return response.json() as Promise<{ crest: FamilyCrest }>;
+  const result = await apiFormFetch<{ crest: FamilyCrest }>('/api/family/crest/upload', formData);
+  return withAbsoluteCrestUrl(result);
 }
 
 export const CREST_STYLES: { id: Exclude<CrestStyle, 'upload'>; label: string; description: string }[] = [
